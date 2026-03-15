@@ -1,0 +1,35 @@
+/* Función de prueba: Calcula el promedio y verifica estados.
+   Este comentario de bloque debería ser ignorado correctamente.
+*/
+
+function void calcular_promedio(integer n, float limite) {
+    // Comentario de una linea: inicializando variables
+    integer i = 0;
+    float total = 0.0;
+    string mensaje = "Procesando... \n Valor \"maximo\" alcanzado";
+    char alerta = '\a'; // Caracter de escape audible
+
+    while (i < n) {
+        if (total >= limite && true) {
+            print "Limite excedido";
+            return;
+        }
+        total += 10.5; 
+        i++;
+    }
+
+    char invalid_char = 'a
+
+    boolean es_valido = (total != 0.0) || false;
+
+    if (!es_valido) {
+        print "Error en el calculo";
+    }
+
+    // --- SECCIÓN DE ERRORES INTENCIONALES PARA EL LEXER ---
+    // 1. Un carácter ilegal (@)
+    integer error_var = @; 
+
+    // 2. Un comentario que nunca cierra (esto debería activar ignore_comment_error)
+    /* Este comentario se queda abierto hasta el final del archivo
+}

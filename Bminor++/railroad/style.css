@@ -1,0 +1,110 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; 
+    min-height: 100vh;
+    margin: 0;
+    padding: 40px 0;
+    background-color: #f0f0f0;
+    overflow-y: auto;               /* Asegura que el scroll vertical esté activo */
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px; 
+    padding: 60px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+
+    width: fit-content;   /* Se ajusta al contenido */
+    min-width: 800px;
+    max-width: 95%;       /* Evita que se pegue a los bordes del navegador */
+}
+
+/* Título principal de la página */
+.main-title {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 3rem;
+    color: #6d2543;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+/* Subtítulo o descripción */
+.subtitle {
+    font-family: "Segoe UI", sans-serif;
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 40px;
+    text-align: center;
+}
+
+/* Ajuste opcional para la línea divisoria */
+hr {
+    width: 80%;
+    border: 0;
+    border-top: 1px solid #eee;
+    margin: 20px 0;
+}
+
+/* Eliminación del margen de los títulos para que no empujen hacia abajo */
+h2 {
+    margin-bottom: 5px;
+    font-family: "Segoe UI", sans-serif;
+    color: #333;
+    text-align: center;
+}
+
+/* Grupo que contiene el título y el diagrama */
+.rule-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    padding: 30px 0; 
+}
+
+/* ESTILOS CLAVE PARA EL CENTRADO DE TEXTO */
+svg.railroad-diagram {
+    background-color: transparent;
+    margin: 20px 0;
+    transform: scale(1.25);    /* Aumento de tamaño del 25% */
+    transform-origin: center;
+}
+
+svg.railroad-diagram text {
+    font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px;   
+    fill: #000;
+
+    /* CENTRADO HORIZONTAL */
+    text-anchor: middle;        
+    /* CENTRADO VERTICAL */
+    dominant-baseline: central; 
+    alignment-baseline: middle; 
+}
+
+
+svg.railroad-diagram g.terminal rect {
+    fill: #d4f8d4; 
+    stroke: #333;
+    stroke-width: 1px;
+    rx: 10; /* Bordea las esquinas de los terminales */
+    ry: 10;
+}
+
+/* Estilo para los bloques de No Terminales */
+svg.railroad-diagram g.non-terminal rect {
+    fill: #d4e3f8;      
+    stroke: #0d47a1;    
+    stroke-width: 2px;
+}
+
+svg.railroad-diagram path {
+    stroke-width: 2.5;
+    stroke: #333;
+    fill: none;
+}
