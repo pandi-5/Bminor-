@@ -5,8 +5,6 @@ from rich import print
 
 from lexer  import Lexer
 from errors import error, errors_detected
-from model  import *
-
 
 def _L(node, lineno):
 	node.lineno = lineno
@@ -27,7 +25,7 @@ class Parser(sly.Parser):
 	
 	@_("decl_list")
 	def prog(self, p):
-		...
+		return p.decl_list
 	
 	# =================================================
 	# LISTAS DE DECLARACIONES
@@ -35,139 +33,153 @@ class Parser(sly.Parser):
 	
 	@_("decl decl_list")
 	def decl_list(self, p):
-		...
+		return [p.decl] + p.decl_list
 		
 	@_("empty")
 	def decl_list(self, p):
-		...
+		return []
 		
 	# =================================================
 	# DECLARACIONES
 	# =================================================
-	
+
+	@_("ID ':' type_func ';'")
+	@_("ID ':' type_array_sized ';'")
 	@_("ID ':' type_simple ';'")
 	def decl(self, p):
-		...
-		
-	@_("ID ':' type_array_sized ';'")
-	def decl(self, p):
-		...
-		
-	@_("ID ':' type_func ';'")
-	def decl(self, p):
-		...
-		
+		return ('decl_simp', p.ID, p[2])
+
 	@_("decl_init")
+	@_("class_decl")	
 	def decl(self, p):
-		...
+		return p[0]
 		
 	# === DECLARACIONES con inicialización
 	
+	@_("ID ':' CONSTANT '=' expr ';'")
 	@_("ID ':' type_simple '=' expr ';'")
 	def decl_init(self, p):
-		...
-		
-	@_("ID ':' CONSTANT '=' expr ';'")
-	def decl_init(self, p):
-		...
-		
+		return ('decl_init', p.ID, p[2], p.expr)
+
+	@_("ID ':' type_func '=' '{' opt_stmt_list '}'")	
 	@_("ID ':' type_array_sized '=' '{' opt_expr_list '}' ';'")
 	def decl_init(self, p):
-		...
-		
-	@_("ID ':' type_func '=' '{' opt_stmt_list '}'")
-	def decl_init(self, p):
-		...
-		
+		return ('decl_init', p.ID, p[2], p[5])
+
+	# =================================================
+	# CLASES
+	# =================================================
+
+	@_("CLASS ':' ID class_body")	
+	def class_decl(self, p):
+		return ('decl_class', p.ID, p.class_body)
+
+	@_("'{' class_member_list '}'")	
+	def class_body(self, p):
+		return p.class_member_list
+	
+	@_("empty")	
+	def class_member_list(self, p):
+		return []
+
+	@_("class_member class_member_list")	
+	def class_member_list(self, p):
+		return [p.class_member] + p.class_member_list
+	
+	@_("decl")	
+	@_("decl_init")
+	def class_member(self, p):
+		return p[0]
+
 	# =================================================
 	# STATEMENTS
 	# =================================================
 	
 	@_("stmt_list")
 	def opt_stmt_list(self, p):
-		...
+		return p.stmt_list
 		
 	@_("empty")
 	def opt_stmt_list(self, p):
-		...
+		return []
 		
 	@_("stmt stmt_list")
 	def stmt_list(self, p):
-		...
+		return [p.stmt] + p.stmt_list
 		
 	@_("stmt")
 	def stmt_list(self, p):
-		...
+		return [p.stmt]
 		
 	@_("open_stmt")
 	@_("closed_stmt")
 	def stmt(self, p):
-		...
+		return p[0]
 
 	@_("if_stmt_closed")
 	@_("for_stmt_closed")
 	@_("while_stmt_closed")
 	@_("simple_stmt")
 	def closed_stmt(self, p):
-		...
+		return p[0]
 
 	@_("if_stmt_open")
 	@_("for_stmt_open")
 	@_("while_stmt_open")
 	def open_stmt(self, p):
-		...
+		return p[0]
 
 	# -------------------------------------------------
 	# IF
 	# -------------------------------------------------
 	
-	@_("IF '(' opt_expr ')'")
-	def if_cond(self, p):
-		...
-		
 	@_("if_cond closed_stmt ELSE closed_stmt")
 	def if_stmt_closed(self, p):
-		...
-		
-	@_("if_cond stmt")
-	def if_stmt_open(self, p):
-		...
-		
+		return ('IF', p.if_cond, p[1], p[3])
+	
 	@_("if_cond closed_stmt ELSE if_stmt_open")
 	def if_stmt_open(self, p):
-		...
+		return ('IF', p.if_cond, p[1], p[3])
+
+	@_("if_cond stmt")
+	def if_stmt_open(self, p):
+		return ('IF', p.if_cond, p.stmt, None)
+
+	@_("IF '(' opt_expr ')'")
+	def if_cond(self, p):
+		return p.opt_expr
 		
 	# -------------------------------------------------
 	# FOR
 	# -------------------------------------------------
 	
-	@_("FOR '(' opt_expr ';' opt_expr ';' opt_expr ')'")
-	def for_header(self, p):
-		...
-		
-	@_("for_header open_stmt")
-	def for_stmt_open(self, p):
-		...
-		
 	@_("for_header closed_stmt")
 	def for_stmt_closed(self, p):
-		...
+		return ('FOR', p.for_header, p.closed_stmt)
+
+	@_("for_header open_stmt")
+	def for_stmt_open(self, p):
+		return ('FOR', p.for_header, p.open_stmt)
+
+	@_("FOR '(' opt_expr ';' opt_expr ';' opt_expr ')'")
+	def for_header(self, p):
+		return (p[2], p[4], p[6])
 		
 	# -------------------------------------------------
 	# WHILE
 	# -------------------------------------------------
-	
-	@_("WHILE '(' opt_expr ')'")
-	def while_cond(self, p):
-		...
 		
 	@_("while_cond open_stmt")
 	def while_stmt_open(self, p):
-		...
+		return ('WHILE', p.while_cond, p.open_stmt)
 		
 	@_("while_cond closed_stmt")
 	def while_stmt_closed(self, p):
-		...
+		return ('WHILE', p.while_cond, p.closed_stmt)
+	
+	@_("WHILE '(' opt_expr ')'")
+	def while_cond(self, p):
+		return p.opt_expr
 		
 	# -------------------------------------------------
 	# SIMPLE STATEMENTS
@@ -181,12 +193,12 @@ class Parser(sly.Parser):
 	@_("decl")
 	@_("expr ';'")
 	def simple_stmt(self, p):
-		...
+		return p[0]
 
 	# PRINT
 	@_("PRINT opt_expr_list ';'")
 	def print_stmt(self, p):
-		...
+		return ('PRINT', p.opt_expr_list)
 		
 	# RETURN
 	@_("RETURN opt_expr ';'")
