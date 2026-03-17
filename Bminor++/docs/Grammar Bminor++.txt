@@ -68,11 +68,17 @@ while_stmt_closed ::= while_header closed_stmt              // Sentencia cerrada
 /* Simple statements are not recursive */
 simple_stmt ::= print_stmt
     | return_stmt
+    | break_stmt
+    | continue_stmt
     | block_stmt
     | decl
     | expr ';'
 
 print_stmt ::= 'PRINT' opt_expr_list ';'
+
+break_stmt ::= 'BREAK' ';'
+
+continue_stmt ::= 'CONTINUE' ';'
 
 return_stmt ::= 'RETURN' opt_expr ';'
 
@@ -135,7 +141,7 @@ expr7 ::= expr7 '^' expr8
     | expr8
 
 expr8 ::= '-' expr8
-    | 'NOT' expr8
+    | 'LNOT' expr8
     | 'INC' expr8                                               // expresión pre incremento agragada
     | 'DEC' expr8                                               // expresión pre decremento agragada
     | expr9
