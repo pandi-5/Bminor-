@@ -8,8 +8,8 @@ class Lexer(sly.Lexer):
     tokens = {
         # Palabras Reservadas
         ARRAY, BOOLEAN, CHAR, ELSE, TRUE, FALSE, FLOAT, FOR,
-        FUNCTION, IF, INTEGER, PRINT, RETURN, STRING,
-        VOID, WHILE, CLASS, NEW, THIS,
+        FUNCTION, IF, INTEGER, PRINT, RETURN, STRING, AUTO,
+        VOID, WHILE, CLASS, NEW, THIS, CONSTANT, BREAK, CONTINUE,
 
         # Operadores de Relacion
         LT, LE, GT, GE, EQ, NE, LAND, LOR, LNOT, INC, DEC,
@@ -36,25 +36,29 @@ class Lexer(sly.Lexer):
     ID = r'[a-zA-Z_][a-zA-Z0-9_]*'
 
     # PALABRAS RESERVADAS
-    ID['array']   = ARRAY
-    ID['boolean'] = BOOLEAN
-    ID['char']    = CHAR
-    ID['else']    = ELSE
-    ID['true']    = TRUE
-    ID['false']   = FALSE
-    ID['float']   = FLOAT
-    ID['for']     = FOR
-    ID['function']= FUNCTION
-    ID['if']      = IF
-    ID['integer'] = INTEGER
-    ID['print']   = PRINT
-    ID['return']  = RETURN
-    ID['string']  = STRING
-    ID['void']    = VOID
-    ID['while']   = WHILE
-    ID['class']   = CLASS
-    ID['new']     = NEW
-    ID['this']    = THIS
+    ID['array']    = ARRAY
+    ID['auto']     = AUTO
+    ID['boolean']  = BOOLEAN
+    ID['char']     = CHAR
+    ID['else']     = ELSE
+    ID['true']     = TRUE
+    ID['false']    = FALSE
+    ID['float']    = FLOAT
+    ID['for']      = FOR
+    ID['function'] = FUNCTION
+    ID['if']       = IF
+    ID['integer']  = INTEGER
+    ID['print']    = PRINT
+    ID['return']   = RETURN
+    ID['string']   = STRING
+    ID['void']     = VOID
+    ID['while']    = WHILE
+    ID['class']    = CLASS
+    ID['new']      = NEW
+    ID['this']     = THIS
+    ID['constant'] = CONSTANT
+    ID['break']    = BREAK
+    ID['continue'] = CONTINUE
 
     # OPERADORES DE RELACION
     LE   = r'<='

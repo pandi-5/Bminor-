@@ -3,13 +3,12 @@ import logging
 import sly
 from rich import print
 
-from lexer  import Lexer
+from lexer_mio  import Lexer
 from errors import error, errors_detected
 
 def _L(node, lineno):
 	node.lineno = lineno
 	return node
-	
 	
 class Parser(sly.Parser):
 	log = logging.getLogger()
@@ -47,7 +46,7 @@ class Parser(sly.Parser):
 	@_("ID ':' type_array_sized ';'")
 	@_("ID ':' type_simple ';'")
 	def decl(self, p):
-		return ('decl_simp', p.ID, p[2])
+		return ('SIMPLE_DECL', p.ID, p[2])
 
 	@_("decl_init")
 	@_("class_decl")	
@@ -59,12 +58,12 @@ class Parser(sly.Parser):
 	@_("ID ':' CONSTANT '=' expr ';'")
 	@_("ID ':' type_simple '=' expr ';'")
 	def decl_init(self, p):
-		return ('decl_init', p.ID, p[2], p.expr)
+		return ('INIT_DECL', p.ID, p[2], p.expr)
 
 	@_("ID ':' type_func '=' '{' opt_stmt_list '}'")	
 	@_("ID ':' type_array_sized '=' '{' opt_expr_list '}' ';'")
 	def decl_init(self, p):
-		return ('decl_init', p.ID, p[2], p[5])
+		return ('INIT_DECL', p.ID, p[2], p[5])
 
 	# =================================================
 	# CLASES
@@ -72,7 +71,7 @@ class Parser(sly.Parser):
 
 	@_("CLASS ':' ID class_body")	
 	def class_decl(self, p):
-		return ('decl_class', p.ID, p.class_body)
+		return ('CLASS_DECL', p.ID, p.class_body)
 
 	@_("'{' class_member_list '}'")	
 	def class_body(self, p):
@@ -286,7 +285,11 @@ class Parser(sly.Parser):
 		
 	@_("ID index")
 	def lval(self, p):
-		return ('ID_INDEX', p.ID, p.index)
+		return ('INDEX_ID', p.ID, p[1])
+	
+	@_("THIS '.' ID")
+	def lval(self, p):
+		return ('GET_ATTR', 'this', p.ID)
 		
 	# -------------------------------------------------
 	# OPERADORES
@@ -306,7 +309,7 @@ class Parser(sly.Parser):
 		
 	@_("expr4")
 	def expr3(self, p):
-		return p.expr3
+		return p.expr4
 		
 	@_("expr4 EQ expr5")
 	@_("expr4 NE expr5")
@@ -354,74 +357,118 @@ class Parser(sly.Parser):
 	@_("DEC expr8")
 	def expr8(self, p):
 		operador = p[0]
-		if operador == 'INC':
+		if operador == '++':
 			return ('PRE_INC', p.expr8)
-		elif operador == 'DEC':
+		elif operador == '--':
 			return ('PRE_DEC', p.expr8)
 		else:
 			return (operador, p.expr8)
+		
+	@_("expr9")
+	def expr8(self, p):
+		return p.expr9
 
 	@_("expr9 INC")
-	@_("expr9 INC")
-	def expr8(self, p):
+	@_("expr9 DEC")
+	def expr9(self, p):
 		operador = p[1]
-		if operador == 'INC':
+		if operador == '++':
 			return ('POST_INC', p.expr9)
 		else:
 			return ('POST_DEC', p.expr9)
 
 	@_("group")
-	def prefix(self, p):
-		...
+	def expr9(self, p):
+		return p.group
 		
 	@_("'(' expr ')'")
 	def group(self, p):
-		...
+		return p.expr
 		
 	@_("ID '(' opt_expr_list ')'")
 	def group(self, p):
-		...
+		return ('CALL', p.ID, p.opt_expr_list)
 		
 	@_("ID index")
 	def group(self, p):
-		...
-		
+		return ('INDEX_ID', p.ID, p[1])
+
 	@_("factor")
+	@_("member_access")
+	@_("object_instantiation")
 	def group(self, p):
-		...
-		
+		return p[0]
+
+	# INSTANCIA DE UN OBJETO
+	@_("NEW ID '(' opt_expr_list ')'")
+	def object_instantiation(self, p):
+		return('NEW_INSTANCE', p.ID, p.opt_expr_list)
+	
+	# ACCESO A MIEMBRO DE CLASE
+	@_("ID '.' ID")
+	@_("member_access '.' ID")
+	def member_access(self, p):
+		return('GET_ATTR', p[0], p[2])
+	
+	@_("THIS '.' ID")
+	def member_access(self, p):
+		return('GET_ATTR', 'this', p[2])
+	
+	@_("member_access '(' opt_expr_list ')'")
+	def member_access(self, p):
+		return('METHOD_CALL', p[0], p[2])
+	
+	# LISTA DE INDICES
+	@_("index_list index")
+	def index_list(self, p):
+		return p.index_list + [p.index]
+
+	@_("index")
+	def index_list(self, p):
+		return [p.index]
+
 	# INDICE DE ARREGLO
 	@_("'[' expr ']'")
 	def index(self, p):
-		...
-	
+		return p.expr
+
 	# -------------------------------------------------
 	# FACTORES
 	# -------------------------------------------------
 	
 	@_("ID")
 	def factor(self, p):
-		...
+		return ('ID', p.ID)
 		
 	@_("INTEGER_LITERAL")
 	def factor(self, p):
-		...
+		return ('INTEGER_LITERAL', int(p[0]))
 		
 	@_("FLOAT_LITERAL")
 	def factor(self, p):
-		...
+		return ('FLOAT_LITERAL', float(p[0]))
 		
 	@_("CHAR_LITERAL")
 	def factor(self, p):
-		...
+		texto_limpio = p.CHAR_LITERAL[1:-1]
+		return ('CHAR_LITERAL', texto_limpio)
 		
 	@_("STRING_LITERAL")
 	def factor(self, p):
-		...
+		texto_limpio = p.STRING_LITERAL[1:-1]
+		return ('STRING_LITERAL', texto_limpio)
 		
-	@_("TRUE", "FALSE")
+	@_("TRUE")
 	def factor(self, p):
-		...
+		return ('BOOLEAN', True)
+	
+	@_("FALSE")
+	def factor(self, p):
+		return ('BOOLEAN', False)
+
+	@_("THIS")
+	def factor(self, p):
+		return ('THIS',)
 		
 	# =================================================
 	# TIPOS
@@ -433,51 +480,52 @@ class Parser(sly.Parser):
 	@_("CHAR")
 	@_("STRING")
 	@_("VOID")
+	@_("ID")
 	def type_simple(self, p):
-		...
+		return p[0]
 		
 	@_("ARRAY '[' ']' type_simple")
 	@_("ARRAY '[' ']' type_array")
 	def type_array(self, p):
-		...
+		return('ARRAY', p[3])
 		
 	@_("ARRAY index type_simple")
 	@_("ARRAY index type_array_sized")
 	def type_array_sized(self, p):
-		...
+		return('ARRAY', p[1], p[2])
 		
 	@_("FUNCTION type_simple '(' opt_param_list ')'")
 	@_("FUNCTION type_array_sized '(' opt_param_list ')'")
 	def type_func(self, p):
-		...
+		return('FUNCTION', p[1], p[3])
 		
 	@_("empty")
 	def opt_param_list(self, p):
-		...
+		return []
 		
 	@_("param_list")
 	def opt_param_list(self, p):
-		...
+		return p.param_list
 		
 	@_("param_list ',' param")
 	def param_list(self, p):
-		...
+		return p.param_list + [p.param]
 		
 	@_("param")
 	def param_list(self, p):
-		...
+		return [p.param]
 		
 	@_("ID ':' type_simple")
 	def param(self, p):
-		...
+		return ('PARAM_DECL', p.ID, p.type_simple)
 		
 	@_("ID ':' type_array")
 	def param(self, p):
-		...
+		return ('PARAM_DECL', p.ID, p.type_array)
 		
 	@_("ID ':' type_array_sized")
 	def param(self, p):
-		...
+		return ('PARAM_DECL', p.ID, p.type_array_sized)
 		
 	# =================================================
 	# UTILIDAD: EMPTY
