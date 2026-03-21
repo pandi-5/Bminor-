@@ -148,8 +148,8 @@ Rule 144   empty -> <empty>
 
 Unused terminals:
 
-    AUTO
     BOOLEAN_LITERAL
+    AUTO
 
 Terminals, with rules where they appear:
 

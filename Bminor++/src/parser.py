@@ -3,6 +3,7 @@ import logging
 import sly
 from rich import print
 
+from model import *
 from lexer_mio  import Lexer
 from errors import error, errors_detected
 
