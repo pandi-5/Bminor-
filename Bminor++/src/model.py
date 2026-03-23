@@ -1,7 +1,23 @@
 # model.pyyy
 
 class Node:
-    pass
+    def __repr__(self):
+        # 1. Sacamos el nombre de tu clase (ej. 'InitDecl', 'BinaryOp')
+        class_name = self.__class__.__name__
+        
+        # 2. Recorremos todo lo que guardaste en el __init__ y lo armamos bonito
+        # (Ignoramos 'lineno' para que no ensucie mucho la pantalla, pero puedes quitar ese if si quieres verlo)
+        atributos = []
+        for llave, valor in self.__dict__.items():
+            if llave != 'lineno':
+                atributos.append(f"{llave}={repr(valor)}")
+                
+        # 3. Lo unimos todo en un texto estilo: InitDecl(varName='x', value=5)
+        return f"{class_name}({', '.join(atributos)})"
+
+class Program(Node):
+    def __init__(self, decls):
+        self.decls = decls
 
 class SimpleDecl(Node):
     def __init__(self, varName, dataType):
@@ -15,9 +31,9 @@ class InitDecl(Node):
         self.value = value
 
 class ClassDecl(Node):
-    def __init__(self, className, value):
+    def __init__(self, className, classBody):
         self.className = className
-        self.value = value
+        self.classBody = classBody
 
 class If(Node):
     def __init__(self, condition, ifBody, elseBody):
@@ -52,8 +68,8 @@ class Continue(Node):
         pass
 
 class Assignment(Node):
-    def __init__(self, varName, operator, value):
-        self.varName = varName
+    def __init__(self, leftVal, operator, value):
+        self.leftVal = leftVal
         self.operator = operator
         self.value = value
 
@@ -68,20 +84,20 @@ class Id(Node):
         self.name = name
 
 class IdIndex(Node):
-    def __init__(self, name, index):
-        self.name = name
+    def __init__(self, varName, index):
+        self.varName = varName
         self.index = index
 
 class GetAttr(Node):
-    def __init__(self, name, attr):
-        self.name = name
+    def __init__(self, varName, attr):
+        self.varName = varName
         self.attr = attr
 
 class BinaryOp(Node):
     def __init__(self, leftVal, operator, rightVal):
-        self.left = leftVal
+        self.leftVal = leftVal
         self.operator = operator
-        self.right = rightVal
+        self.rightVal = rightVal
 
 class UnaryOp(Node):
     def __init__(self, operator, value):
@@ -89,34 +105,34 @@ class UnaryOp(Node):
         self.value = value
 
 class Call(Node):
-    def __init__(self, funcName, args):
+    def __init__(self, funcName, params):
         self.funcName = funcName
-        self.args = args    
+        self.params = params    
 
 class NewInstance(Node):
-    def __init__(self, className, args):
+    def __init__(self, className, params):
         self.className = className
-        self.args = args
-    
+        self.params = params
+
 class MethodCall(Node):
-    def __init__(self, methodName, args):
+    def __init__(self, methodName, params):
         self.methodName = methodName
-        self.args = args
+        self.params = params
 
 class Literal(Node):
     def __init__(self, valueType, value):
-        self.typeValue = valueType
+        self.valueType = valueType
         self.value = value
 
 class Array(Node):
     def __init__(self, valuesType, size=None):
-        self.typeValues = valuesType
+        self.valuesType = valuesType
         self.size = size
 
 class Function(Node):
-    def __init__(self, funcType, args):
-        self.typeFunc = funcType
-        self.args = args
+    def __init__(self, funcType, params):
+        self.funcType = funcType
+        self.params = params
 
 class ParamDecl(Node):
     def __init__(self, varName, dataType):

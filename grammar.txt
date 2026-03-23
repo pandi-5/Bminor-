@@ -39,9 +39,9 @@ Rule 35    if_cond -> IF ( opt_expr )
 Rule 36    for_stmt_closed -> for_header closed_stmt
 Rule 37    for_stmt_open -> for_header open_stmt
 Rule 38    for_header -> FOR ( opt_expr ; opt_expr ; opt_expr )
-Rule 39    while_stmt_open -> while_cond open_stmt
-Rule 40    while_stmt_closed -> while_cond closed_stmt
-Rule 41    while_cond -> WHILE ( opt_expr )
+Rule 39    while_stmt_open -> while_header open_stmt
+Rule 40    while_stmt_closed -> while_header closed_stmt
+Rule 41    while_header -> WHILE ( opt_expr )
 Rule 42    simple_stmt -> expr ;
 Rule 43    simple_stmt -> decl
 Rule 44    simple_stmt -> block_stmt
@@ -141,15 +141,15 @@ Rule 137   opt_param_list -> param_list
 Rule 138   opt_param_list -> empty
 Rule 139   param_list -> param
 Rule 140   param_list -> param_list , param
-Rule 141   param -> ID : type_array_sized
+Rule 141   param -> ID : type_simple
 Rule 142   param -> ID : type_array
-Rule 143   param -> ID : type_simple
+Rule 143   param -> ID : type_array_sized
 Rule 144   empty -> <empty>
 
 Unused terminals:
 
-    BOOLEAN_LITERAL
     AUTO
+    BOOLEAN_LITERAL
 
 Terminals, with rules where they appear:
 
@@ -271,10 +271,10 @@ stmt                 : 21 22 33
 stmt_list            : 20 22 53
 tern_op              : 61 70 70
 type_array           : 131 142
-type_array_sized     : 7 9 133 135 141
+type_array_sized     : 7 9 133 135 143
 type_func            : 8 10
-type_simple          : 6 11 132 134 136 143
-while_cond           : 39 40
+type_simple          : 6 11 132 134 136 141
+while_header         : 39 40
 while_stmt_closed    : 26
 while_stmt_open      : 29
 
@@ -2143,10 +2143,10 @@ state 70
     (46) simple_stmt -> . break_stmt
     (47) simple_stmt -> . return_stmt
     (48) simple_stmt -> . print_stmt
-    (40) while_stmt_closed -> . while_cond closed_stmt
+    (40) while_stmt_closed -> . while_header closed_stmt
     (36) for_stmt_closed -> . for_header closed_stmt
     (32) if_stmt_closed -> . if_cond closed_stmt ELSE closed_stmt
-    (39) while_stmt_open -> . while_cond open_stmt
+    (39) while_stmt_open -> . while_header open_stmt
     (37) for_stmt_open -> . for_header open_stmt
     (33) if_stmt_open -> . if_cond stmt
     (34) if_stmt_open -> . if_cond closed_stmt ELSE if_stmt_open
@@ -2161,7 +2161,7 @@ state 70
     (51) break_stmt -> . BREAK ;
     (50) return_stmt -> . RETURN opt_expr ;
     (49) print_stmt -> . PRINT opt_expr_list ;
-    (41) while_cond -> . WHILE ( opt_expr )
+    (41) while_header -> . WHILE ( opt_expr )
     (38) for_header -> . FOR ( opt_expr ; opt_expr ; opt_expr )
     (35) if_cond -> . IF ( opt_expr )
     (61) expr1 -> . tern_op
@@ -2274,7 +2274,7 @@ state 70
     break_stmt                     shift and go to state 144
     return_stmt                    shift and go to state 145
     print_stmt                     shift and go to state 146
-    while_cond                     shift and go to state 147
+    while_header                   shift and go to state 147
     for_header                     shift and go to state 148
     if_cond                        shift and go to state 149
     expr1                          shift and go to state 41
@@ -2335,9 +2335,9 @@ state 75
     (139) param_list -> . param
     (140) param_list -> . param_list , param
     (144) empty -> .
-    (141) param -> . ID : type_array_sized
+    (141) param -> . ID : type_simple
     (142) param -> . ID : type_array
-    (143) param -> . ID : type_simple
+    (143) param -> . ID : type_array_sized
     )               reduce using rule 144 (empty -> .)
     ID              shift and go to state 163
 
@@ -2354,9 +2354,9 @@ state 76
     (139) param_list -> . param
     (140) param_list -> . param_list , param
     (144) empty -> .
-    (141) param -> . ID : type_array_sized
+    (141) param -> . ID : type_simple
     (142) param -> . ID : type_array
-    (143) param -> . ID : type_simple
+    (143) param -> . ID : type_array_sized
     )               reduce using rule 144 (empty -> .)
     ID              shift and go to state 163
 
@@ -4583,10 +4583,10 @@ state 126
     (46) simple_stmt -> . break_stmt
     (47) simple_stmt -> . return_stmt
     (48) simple_stmt -> . print_stmt
-    (40) while_stmt_closed -> . while_cond closed_stmt
+    (40) while_stmt_closed -> . while_header closed_stmt
     (36) for_stmt_closed -> . for_header closed_stmt
     (32) if_stmt_closed -> . if_cond closed_stmt ELSE closed_stmt
-    (39) while_stmt_open -> . while_cond open_stmt
+    (39) while_stmt_open -> . while_header open_stmt
     (37) for_stmt_open -> . for_header open_stmt
     (33) if_stmt_open -> . if_cond stmt
     (34) if_stmt_open -> . if_cond closed_stmt ELSE if_stmt_open
@@ -4601,7 +4601,7 @@ state 126
     (51) break_stmt -> . BREAK ;
     (50) return_stmt -> . RETURN opt_expr ;
     (49) print_stmt -> . PRINT opt_expr_list ;
-    (41) while_cond -> . WHILE ( opt_expr )
+    (41) while_header -> . WHILE ( opt_expr )
     (38) for_header -> . FOR ( opt_expr ; opt_expr ; opt_expr )
     (35) if_cond -> . IF ( opt_expr )
     (61) expr1 -> . tern_op
@@ -4711,7 +4711,7 @@ state 126
     break_stmt                     shift and go to state 144
     return_stmt                    shift and go to state 145
     print_stmt                     shift and go to state 146
-    while_cond                     shift and go to state 147
+    while_header                   shift and go to state 147
     for_header                     shift and go to state 148
     if_cond                        shift and go to state 149
     expr1                          shift and go to state 41
@@ -4772,10 +4772,10 @@ state 130
     (46) simple_stmt -> . break_stmt
     (47) simple_stmt -> . return_stmt
     (48) simple_stmt -> . print_stmt
-    (40) while_stmt_closed -> . while_cond closed_stmt
+    (40) while_stmt_closed -> . while_header closed_stmt
     (36) for_stmt_closed -> . for_header closed_stmt
     (32) if_stmt_closed -> . if_cond closed_stmt ELSE closed_stmt
-    (39) while_stmt_open -> . while_cond open_stmt
+    (39) while_stmt_open -> . while_header open_stmt
     (37) for_stmt_open -> . for_header open_stmt
     (33) if_stmt_open -> . if_cond stmt
     (34) if_stmt_open -> . if_cond closed_stmt ELSE if_stmt_open
@@ -4790,7 +4790,7 @@ state 130
     (51) break_stmt -> . BREAK ;
     (50) return_stmt -> . RETURN opt_expr ;
     (49) print_stmt -> . PRINT opt_expr_list ;
-    (41) while_cond -> . WHILE ( opt_expr )
+    (41) while_header -> . WHILE ( opt_expr )
     (38) for_header -> . FOR ( opt_expr ; opt_expr ; opt_expr )
     (35) if_cond -> . IF ( opt_expr )
     (61) expr1 -> . tern_op
@@ -4901,7 +4901,7 @@ state 130
     break_stmt                     shift and go to state 144
     return_stmt                    shift and go to state 145
     print_stmt                     shift and go to state 146
-    while_cond                     shift and go to state 147
+    while_header                   shift and go to state 147
     for_header                     shift and go to state 148
     if_cond                        shift and go to state 149
     expr1                          shift and go to state 41
@@ -5375,8 +5375,8 @@ state 146
 
 state 147
 
-    (40) while_stmt_closed -> while_cond . closed_stmt
-    (39) while_stmt_open -> while_cond . open_stmt
+    (40) while_stmt_closed -> while_header . closed_stmt
+    (39) while_stmt_open -> while_header . open_stmt
     (25) closed_stmt -> . simple_stmt
     (26) closed_stmt -> . while_stmt_closed
     (27) closed_stmt -> . for_stmt_closed
@@ -5391,10 +5391,10 @@ state 147
     (46) simple_stmt -> . break_stmt
     (47) simple_stmt -> . return_stmt
     (48) simple_stmt -> . print_stmt
-    (40) while_stmt_closed -> . while_cond closed_stmt
+    (40) while_stmt_closed -> . while_header closed_stmt
     (36) for_stmt_closed -> . for_header closed_stmt
     (32) if_stmt_closed -> . if_cond closed_stmt ELSE closed_stmt
-    (39) while_stmt_open -> . while_cond open_stmt
+    (39) while_stmt_open -> . while_header open_stmt
     (37) for_stmt_open -> . for_header open_stmt
     (33) if_stmt_open -> . if_cond stmt
     (34) if_stmt_open -> . if_cond closed_stmt ELSE if_stmt_open
@@ -5409,7 +5409,7 @@ state 147
     (51) break_stmt -> . BREAK ;
     (50) return_stmt -> . RETURN opt_expr ;
     (49) print_stmt -> . PRINT opt_expr_list ;
-    (41) while_cond -> . WHILE ( opt_expr )
+    (41) while_header -> . WHILE ( opt_expr )
     (38) for_header -> . FOR ( opt_expr ; opt_expr ; opt_expr )
     (35) if_cond -> . IF ( opt_expr )
     (61) expr1 -> . tern_op
@@ -5501,7 +5501,7 @@ state 147
     FLOAT_LITERAL   shift and go to state 67
     INTEGER_LITERAL shift and go to state 68
 
-    while_cond                     shift and go to state 147
+    while_header                   shift and go to state 147
     closed_stmt                    shift and go to state 205
     open_stmt                      shift and go to state 206
     simple_stmt                    shift and go to state 133
@@ -5556,10 +5556,10 @@ state 148
     (46) simple_stmt -> . break_stmt
     (47) simple_stmt -> . return_stmt
     (48) simple_stmt -> . print_stmt
-    (40) while_stmt_closed -> . while_cond closed_stmt
+    (40) while_stmt_closed -> . while_header closed_stmt
     (36) for_stmt_closed -> . for_header closed_stmt
     (32) if_stmt_closed -> . if_cond closed_stmt ELSE closed_stmt
-    (39) while_stmt_open -> . while_cond open_stmt
+    (39) while_stmt_open -> . while_header open_stmt
     (37) for_stmt_open -> . for_header open_stmt
     (33) if_stmt_open -> . if_cond stmt
     (34) if_stmt_open -> . if_cond closed_stmt ELSE if_stmt_open
@@ -5574,7 +5574,7 @@ state 148
     (51) break_stmt -> . BREAK ;
     (50) return_stmt -> . RETURN opt_expr ;
     (49) print_stmt -> . PRINT opt_expr_list ;
-    (41) while_cond -> . WHILE ( opt_expr )
+    (41) while_header -> . WHILE ( opt_expr )
     (38) for_header -> . FOR ( opt_expr ; opt_expr ; opt_expr )
     (35) if_cond -> . IF ( opt_expr )
     (61) expr1 -> . tern_op
@@ -5683,7 +5683,7 @@ state 148
     break_stmt                     shift and go to state 144
     return_stmt                    shift and go to state 145
     print_stmt                     shift and go to state 146
-    while_cond                     shift and go to state 147
+    while_header                   shift and go to state 147
     if_cond                        shift and go to state 149
     expr1                          shift and go to state 41
     class_decl                     shift and go to state 5
@@ -5721,7 +5721,7 @@ state 149
     (46) simple_stmt -> . break_stmt
     (47) simple_stmt -> . return_stmt
     (48) simple_stmt -> . print_stmt
-    (40) while_stmt_closed -> . while_cond closed_stmt
+    (40) while_stmt_closed -> . while_header closed_stmt
     (36) for_stmt_closed -> . for_header closed_stmt
     (32) if_stmt_closed -> . if_cond closed_stmt ELSE closed_stmt
     (29) open_stmt -> . while_stmt_open
@@ -5738,10 +5738,10 @@ state 149
     (51) break_stmt -> . BREAK ;
     (50) return_stmt -> . RETURN opt_expr ;
     (49) print_stmt -> . PRINT opt_expr_list ;
-    (41) while_cond -> . WHILE ( opt_expr )
+    (41) while_header -> . WHILE ( opt_expr )
     (38) for_header -> . FOR ( opt_expr ; opt_expr ; opt_expr )
     (35) if_cond -> . IF ( opt_expr )
-    (39) while_stmt_open -> . while_cond open_stmt
+    (39) while_stmt_open -> . while_header open_stmt
     (37) for_stmt_open -> . for_header open_stmt
     (33) if_stmt_open -> . if_cond stmt
     (34) if_stmt_open -> . if_cond closed_stmt ELSE if_stmt_open
@@ -5850,7 +5850,7 @@ state 149
     break_stmt                     shift and go to state 144
     return_stmt                    shift and go to state 145
     print_stmt                     shift and go to state 146
-    while_cond                     shift and go to state 147
+    while_header                   shift and go to state 147
     for_header                     shift and go to state 148
     while_stmt_open                shift and go to state 137
     for_stmt_open                  shift and go to state 138
@@ -6093,7 +6093,7 @@ state 153
 
 state 154
 
-    (41) while_cond -> WHILE . ( opt_expr )
+    (41) while_header -> WHILE . ( opt_expr )
     (               shift and go to state 217
 
 
@@ -6211,9 +6211,9 @@ state 162
 
 state 163
 
-    (141) param -> ID . : type_array_sized
+    (141) param -> ID . : type_simple
     (142) param -> ID . : type_array
-    (143) param -> ID . : type_simple
+    (143) param -> ID . : type_array_sized
     :               shift and go to state 222
 
 
@@ -7179,61 +7179,61 @@ state 204
 
 state 205
 
-    (40) while_stmt_closed -> while_cond closed_stmt .
-    ID              reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
-    {               reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
-    CONTINUE        reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
-    BREAK           reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
-    RETURN          reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
-    PRINT           reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
-    WHILE           reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
-    FOR             reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
-    IF              reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
-    CLASS           reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
-    THIS            reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
-    DEC             reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
-    INC             reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
-    LNOT            reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
-    -               reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
-    (               reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
-    NEW             reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
-    FALSE           reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
-    TRUE            reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
-    STRING_LITERAL  reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
-    CHAR_LITERAL    reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
-    FLOAT_LITERAL   reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
-    INTEGER_LITERAL reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
-    }               reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
-    ELSE            reduce using rule 40 (while_stmt_closed -> while_cond closed_stmt .)
+    (40) while_stmt_closed -> while_header closed_stmt .
+    ID              reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
+    {               reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
+    CONTINUE        reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
+    BREAK           reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
+    RETURN          reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
+    PRINT           reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
+    WHILE           reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
+    FOR             reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
+    IF              reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
+    CLASS           reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
+    THIS            reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
+    DEC             reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
+    INC             reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
+    LNOT            reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
+    -               reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
+    (               reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
+    NEW             reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
+    FALSE           reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
+    TRUE            reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
+    STRING_LITERAL  reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
+    CHAR_LITERAL    reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
+    FLOAT_LITERAL   reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
+    INTEGER_LITERAL reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
+    }               reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
+    ELSE            reduce using rule 40 (while_stmt_closed -> while_header closed_stmt .)
 
 
 state 206
 
-    (39) while_stmt_open -> while_cond open_stmt .
-    ID              reduce using rule 39 (while_stmt_open -> while_cond open_stmt .)
-    {               reduce using rule 39 (while_stmt_open -> while_cond open_stmt .)
-    CONTINUE        reduce using rule 39 (while_stmt_open -> while_cond open_stmt .)
-    BREAK           reduce using rule 39 (while_stmt_open -> while_cond open_stmt .)
-    RETURN          reduce using rule 39 (while_stmt_open -> while_cond open_stmt .)
-    PRINT           reduce using rule 39 (while_stmt_open -> while_cond open_stmt .)
-    WHILE           reduce using rule 39 (while_stmt_open -> while_cond open_stmt .)
-    FOR             reduce using rule 39 (while_stmt_open -> while_cond open_stmt .)
-    IF              reduce using rule 39 (while_stmt_open -> while_cond open_stmt .)
-    CLASS           reduce using rule 39 (while_stmt_open -> while_cond open_stmt .)
-    THIS            reduce using rule 39 (while_stmt_open -> while_cond open_stmt .)
-    DEC             reduce using rule 39 (while_stmt_open -> while_cond open_stmt .)
-    INC             reduce using rule 39 (while_stmt_open -> while_cond open_stmt .)
-    LNOT            reduce using rule 39 (while_stmt_open -> while_cond open_stmt .)
-    -               reduce using rule 39 (while_stmt_open -> while_cond open_stmt .)
-    (               reduce using rule 39 (while_stmt_open -> while_cond open_stmt .)
-    NEW             reduce using rule 39 (while_stmt_open -> while_cond open_stmt .)
-    FALSE           reduce using rule 39 (while_stmt_open -> while_cond open_stmt .)
-    TRUE            reduce using rule 39 (while_stmt_open -> while_cond open_stmt .)
-    STRING_LITERAL  reduce using rule 39 (while_stmt_open -> while_cond open_stmt .)
-    CHAR_LITERAL    reduce using rule 39 (while_stmt_open -> while_cond open_stmt .)
-    FLOAT_LITERAL   reduce using rule 39 (while_stmt_open -> while_cond open_stmt .)
-    INTEGER_LITERAL reduce using rule 39 (while_stmt_open -> while_cond open_stmt .)
-    }               reduce using rule 39 (while_stmt_open -> while_cond open_stmt .)
+    (39) while_stmt_open -> while_header open_stmt .
+    ID              reduce using rule 39 (while_stmt_open -> while_header open_stmt .)
+    {               reduce using rule 39 (while_stmt_open -> while_header open_stmt .)
+    CONTINUE        reduce using rule 39 (while_stmt_open -> while_header open_stmt .)
+    BREAK           reduce using rule 39 (while_stmt_open -> while_header open_stmt .)
+    RETURN          reduce using rule 39 (while_stmt_open -> while_header open_stmt .)
+    PRINT           reduce using rule 39 (while_stmt_open -> while_header open_stmt .)
+    WHILE           reduce using rule 39 (while_stmt_open -> while_header open_stmt .)
+    FOR             reduce using rule 39 (while_stmt_open -> while_header open_stmt .)
+    IF              reduce using rule 39 (while_stmt_open -> while_header open_stmt .)
+    CLASS           reduce using rule 39 (while_stmt_open -> while_header open_stmt .)
+    THIS            reduce using rule 39 (while_stmt_open -> while_header open_stmt .)
+    DEC             reduce using rule 39 (while_stmt_open -> while_header open_stmt .)
+    INC             reduce using rule 39 (while_stmt_open -> while_header open_stmt .)
+    LNOT            reduce using rule 39 (while_stmt_open -> while_header open_stmt .)
+    -               reduce using rule 39 (while_stmt_open -> while_header open_stmt .)
+    (               reduce using rule 39 (while_stmt_open -> while_header open_stmt .)
+    NEW             reduce using rule 39 (while_stmt_open -> while_header open_stmt .)
+    FALSE           reduce using rule 39 (while_stmt_open -> while_header open_stmt .)
+    TRUE            reduce using rule 39 (while_stmt_open -> while_header open_stmt .)
+    STRING_LITERAL  reduce using rule 39 (while_stmt_open -> while_header open_stmt .)
+    CHAR_LITERAL    reduce using rule 39 (while_stmt_open -> while_header open_stmt .)
+    FLOAT_LITERAL   reduce using rule 39 (while_stmt_open -> while_header open_stmt .)
+    INTEGER_LITERAL reduce using rule 39 (while_stmt_open -> while_header open_stmt .)
+    }               reduce using rule 39 (while_stmt_open -> while_header open_stmt .)
 
 
 state 207
@@ -7444,7 +7444,7 @@ state 216
 
 state 217
 
-    (41) while_cond -> WHILE ( . opt_expr )
+    (41) while_header -> WHILE ( . opt_expr )
     (58) opt_expr -> . expr
     (59) opt_expr -> . empty
     (60) expr -> . expr1
@@ -7758,22 +7758,18 @@ state 220
 state 221
 
     (140) param_list -> param_list , . param
-    (141) param -> . ID : type_array_sized
+    (141) param -> . ID : type_simple
     (142) param -> . ID : type_array
-    (143) param -> . ID : type_simple
+    (143) param -> . ID : type_array_sized
     ID              shift and go to state 163
 
     param                          shift and go to state 241
 
 state 222
 
-    (141) param -> ID : . type_array_sized
+    (141) param -> ID : . type_simple
     (142) param -> ID : . type_array
-    (143) param -> ID : . type_simple
-    (133) type_array_sized -> . ARRAY index type_array_sized
-    (134) type_array_sized -> . ARRAY index type_simple
-    (131) type_array -> . ARRAY [ ] type_array
-    (132) type_array -> . ARRAY [ ] type_simple
+    (143) param -> ID : . type_array_sized
     (124) type_simple -> . ID
     (125) type_simple -> . VOID
     (126) type_simple -> . STRING
@@ -7781,7 +7777,10 @@ state 222
     (128) type_simple -> . BOOLEAN
     (129) type_simple -> . FLOAT
     (130) type_simple -> . INTEGER
-    ARRAY           shift and go to state 245
+    (131) type_array -> . ARRAY [ ] type_array
+    (132) type_array -> . ARRAY [ ] type_simple
+    (133) type_array_sized -> . ARRAY index type_array_sized
+    (134) type_array_sized -> . ARRAY index type_simple
     ID              shift and go to state 12
     VOID            shift and go to state 17
     STRING          shift and go to state 18
@@ -7789,10 +7788,11 @@ state 222
     BOOLEAN         shift and go to state 20
     FLOAT           shift and go to state 21
     INTEGER         shift and go to state 22
+    ARRAY           shift and go to state 245
 
-    type_array_sized               shift and go to state 242
+    type_simple                    shift and go to state 242
     type_array                     shift and go to state 243
-    type_simple                    shift and go to state 244
+    type_array_sized               shift and go to state 244
 
 state 223
 
@@ -8086,7 +8086,7 @@ state 235
     (46) simple_stmt -> . break_stmt
     (47) simple_stmt -> . return_stmt
     (48) simple_stmt -> . print_stmt
-    (40) while_stmt_closed -> . while_cond closed_stmt
+    (40) while_stmt_closed -> . while_header closed_stmt
     (36) for_stmt_closed -> . for_header closed_stmt
     (32) if_stmt_closed -> . if_cond closed_stmt ELSE closed_stmt
     (35) if_cond -> . IF ( opt_expr )
@@ -8101,7 +8101,7 @@ state 235
     (51) break_stmt -> . BREAK ;
     (50) return_stmt -> . RETURN opt_expr ;
     (49) print_stmt -> . PRINT opt_expr_list ;
-    (41) while_cond -> . WHILE ( opt_expr )
+    (41) while_header -> . WHILE ( opt_expr )
     (38) for_header -> . FOR ( opt_expr ; opt_expr ; opt_expr )
     (61) expr1 -> . tern_op
     (62) expr1 -> . expr2
@@ -8206,7 +8206,7 @@ state 235
     break_stmt                     shift and go to state 144
     return_stmt                    shift and go to state 145
     print_stmt                     shift and go to state 146
-    while_cond                     shift and go to state 251
+    while_header                   shift and go to state 251
     for_header                     shift and go to state 252
     expr1                          shift and go to state 41
     class_decl                     shift and go to state 5
@@ -8288,7 +8288,7 @@ state 237
 
 state 238
 
-    (41) while_cond -> WHILE ( opt_expr . )
+    (41) while_header -> WHILE ( opt_expr . )
     )               shift and go to state 253
 
 
@@ -8313,9 +8313,9 @@ state 241
 
 state 242
 
-    (141) param -> ID : type_array_sized .
-    ,               reduce using rule 141 (param -> ID : type_array_sized .)
-    )               reduce using rule 141 (param -> ID : type_array_sized .)
+    (141) param -> ID : type_simple .
+    ,               reduce using rule 141 (param -> ID : type_simple .)
+    )               reduce using rule 141 (param -> ID : type_simple .)
 
 
 state 243
@@ -8327,17 +8327,17 @@ state 243
 
 state 244
 
-    (143) param -> ID : type_simple .
-    ,               reduce using rule 143 (param -> ID : type_simple .)
-    )               reduce using rule 143 (param -> ID : type_simple .)
+    (143) param -> ID : type_array_sized .
+    ,               reduce using rule 143 (param -> ID : type_array_sized .)
+    )               reduce using rule 143 (param -> ID : type_array_sized .)
 
 
 state 245
 
-    (133) type_array_sized -> ARRAY . index type_array_sized
-    (134) type_array_sized -> ARRAY . index type_simple
     (131) type_array -> ARRAY . [ ] type_array
     (132) type_array -> ARRAY . [ ] type_simple
+    (133) type_array_sized -> ARRAY . index type_array_sized
+    (134) type_array_sized -> ARRAY . index type_simple
     (115) index -> . [ expr ]
     [               shift and go to state 256
 
@@ -8403,10 +8403,10 @@ state 248
     (46) simple_stmt -> . break_stmt
     (47) simple_stmt -> . return_stmt
     (48) simple_stmt -> . print_stmt
-    (40) while_stmt_closed -> . while_cond closed_stmt
+    (40) while_stmt_closed -> . while_header closed_stmt
     (36) for_stmt_closed -> . for_header closed_stmt
     (32) if_stmt_closed -> . if_cond closed_stmt ELSE closed_stmt
-    (39) while_stmt_open -> . while_cond open_stmt
+    (39) while_stmt_open -> . while_header open_stmt
     (37) for_stmt_open -> . for_header open_stmt
     (33) if_stmt_open -> . if_cond stmt
     (34) if_stmt_open -> . if_cond closed_stmt ELSE if_stmt_open
@@ -8421,7 +8421,7 @@ state 248
     (51) break_stmt -> . BREAK ;
     (50) return_stmt -> . RETURN opt_expr ;
     (49) print_stmt -> . PRINT opt_expr_list ;
-    (41) while_cond -> . WHILE ( opt_expr )
+    (41) while_header -> . WHILE ( opt_expr )
     (38) for_header -> . FOR ( opt_expr ; opt_expr ; opt_expr )
     (35) if_cond -> . IF ( opt_expr )
     (61) expr1 -> . tern_op
@@ -8531,7 +8531,7 @@ state 248
     break_stmt                     shift and go to state 144
     return_stmt                    shift and go to state 145
     print_stmt                     shift and go to state 146
-    while_cond                     shift and go to state 147
+    while_header                   shift and go to state 147
     for_header                     shift and go to state 148
     expr1                          shift and go to state 41
     class_decl                     shift and go to state 5
@@ -8612,7 +8612,7 @@ state 250
 
 state 251
 
-    (40) while_stmt_closed -> while_cond . closed_stmt
+    (40) while_stmt_closed -> while_header . closed_stmt
     (25) closed_stmt -> . simple_stmt
     (26) closed_stmt -> . while_stmt_closed
     (27) closed_stmt -> . for_stmt_closed
@@ -8624,7 +8624,7 @@ state 251
     (46) simple_stmt -> . break_stmt
     (47) simple_stmt -> . return_stmt
     (48) simple_stmt -> . print_stmt
-    (40) while_stmt_closed -> . while_cond closed_stmt
+    (40) while_stmt_closed -> . while_header closed_stmt
     (36) for_stmt_closed -> . for_header closed_stmt
     (32) if_stmt_closed -> . if_cond closed_stmt ELSE closed_stmt
     (60) expr -> . expr1
@@ -8638,7 +8638,7 @@ state 251
     (51) break_stmt -> . BREAK ;
     (50) return_stmt -> . RETURN opt_expr ;
     (49) print_stmt -> . PRINT opt_expr_list ;
-    (41) while_cond -> . WHILE ( opt_expr )
+    (41) while_header -> . WHILE ( opt_expr )
     (38) for_header -> . FOR ( opt_expr ; opt_expr ; opt_expr )
     (35) if_cond -> . IF ( opt_expr )
     (61) expr1 -> . tern_op
@@ -8730,7 +8730,7 @@ state 251
     FLOAT_LITERAL   shift and go to state 67
     INTEGER_LITERAL shift and go to state 68
 
-    while_cond                     shift and go to state 251
+    while_header                   shift and go to state 251
     closed_stmt                    shift and go to state 205
     simple_stmt                    shift and go to state 133
     while_stmt_closed              shift and go to state 134
@@ -8777,7 +8777,7 @@ state 252
     (46) simple_stmt -> . break_stmt
     (47) simple_stmt -> . return_stmt
     (48) simple_stmt -> . print_stmt
-    (40) while_stmt_closed -> . while_cond closed_stmt
+    (40) while_stmt_closed -> . while_header closed_stmt
     (36) for_stmt_closed -> . for_header closed_stmt
     (32) if_stmt_closed -> . if_cond closed_stmt ELSE closed_stmt
     (60) expr -> . expr1
@@ -8791,7 +8791,7 @@ state 252
     (51) break_stmt -> . BREAK ;
     (50) return_stmt -> . RETURN opt_expr ;
     (49) print_stmt -> . PRINT opt_expr_list ;
-    (41) while_cond -> . WHILE ( opt_expr )
+    (41) while_header -> . WHILE ( opt_expr )
     (38) for_header -> . FOR ( opt_expr ; opt_expr ; opt_expr )
     (35) if_cond -> . IF ( opt_expr )
     (61) expr1 -> . tern_op
@@ -8896,7 +8896,7 @@ state 252
     break_stmt                     shift and go to state 144
     return_stmt                    shift and go to state 145
     print_stmt                     shift and go to state 146
-    while_cond                     shift and go to state 251
+    while_header                   shift and go to state 251
     if_cond                        shift and go to state 258
     expr1                          shift and go to state 41
     class_decl                     shift and go to state 5
@@ -8918,30 +8918,30 @@ state 252
 
 state 253
 
-    (41) while_cond -> WHILE ( opt_expr ) .
-    ID              reduce using rule 41 (while_cond -> WHILE ( opt_expr ) .)
-    {               reduce using rule 41 (while_cond -> WHILE ( opt_expr ) .)
-    CONTINUE        reduce using rule 41 (while_cond -> WHILE ( opt_expr ) .)
-    BREAK           reduce using rule 41 (while_cond -> WHILE ( opt_expr ) .)
-    RETURN          reduce using rule 41 (while_cond -> WHILE ( opt_expr ) .)
-    PRINT           reduce using rule 41 (while_cond -> WHILE ( opt_expr ) .)
-    WHILE           reduce using rule 41 (while_cond -> WHILE ( opt_expr ) .)
-    FOR             reduce using rule 41 (while_cond -> WHILE ( opt_expr ) .)
-    IF              reduce using rule 41 (while_cond -> WHILE ( opt_expr ) .)
-    CLASS           reduce using rule 41 (while_cond -> WHILE ( opt_expr ) .)
-    THIS            reduce using rule 41 (while_cond -> WHILE ( opt_expr ) .)
-    DEC             reduce using rule 41 (while_cond -> WHILE ( opt_expr ) .)
-    INC             reduce using rule 41 (while_cond -> WHILE ( opt_expr ) .)
-    LNOT            reduce using rule 41 (while_cond -> WHILE ( opt_expr ) .)
-    -               reduce using rule 41 (while_cond -> WHILE ( opt_expr ) .)
-    (               reduce using rule 41 (while_cond -> WHILE ( opt_expr ) .)
-    NEW             reduce using rule 41 (while_cond -> WHILE ( opt_expr ) .)
-    FALSE           reduce using rule 41 (while_cond -> WHILE ( opt_expr ) .)
-    TRUE            reduce using rule 41 (while_cond -> WHILE ( opt_expr ) .)
-    STRING_LITERAL  reduce using rule 41 (while_cond -> WHILE ( opt_expr ) .)
-    CHAR_LITERAL    reduce using rule 41 (while_cond -> WHILE ( opt_expr ) .)
-    FLOAT_LITERAL   reduce using rule 41 (while_cond -> WHILE ( opt_expr ) .)
-    INTEGER_LITERAL reduce using rule 41 (while_cond -> WHILE ( opt_expr ) .)
+    (41) while_header -> WHILE ( opt_expr ) .
+    ID              reduce using rule 41 (while_header -> WHILE ( opt_expr ) .)
+    {               reduce using rule 41 (while_header -> WHILE ( opt_expr ) .)
+    CONTINUE        reduce using rule 41 (while_header -> WHILE ( opt_expr ) .)
+    BREAK           reduce using rule 41 (while_header -> WHILE ( opt_expr ) .)
+    RETURN          reduce using rule 41 (while_header -> WHILE ( opt_expr ) .)
+    PRINT           reduce using rule 41 (while_header -> WHILE ( opt_expr ) .)
+    WHILE           reduce using rule 41 (while_header -> WHILE ( opt_expr ) .)
+    FOR             reduce using rule 41 (while_header -> WHILE ( opt_expr ) .)
+    IF              reduce using rule 41 (while_header -> WHILE ( opt_expr ) .)
+    CLASS           reduce using rule 41 (while_header -> WHILE ( opt_expr ) .)
+    THIS            reduce using rule 41 (while_header -> WHILE ( opt_expr ) .)
+    DEC             reduce using rule 41 (while_header -> WHILE ( opt_expr ) .)
+    INC             reduce using rule 41 (while_header -> WHILE ( opt_expr ) .)
+    LNOT            reduce using rule 41 (while_header -> WHILE ( opt_expr ) .)
+    -               reduce using rule 41 (while_header -> WHILE ( opt_expr ) .)
+    (               reduce using rule 41 (while_header -> WHILE ( opt_expr ) .)
+    NEW             reduce using rule 41 (while_header -> WHILE ( opt_expr ) .)
+    FALSE           reduce using rule 41 (while_header -> WHILE ( opt_expr ) .)
+    TRUE            reduce using rule 41 (while_header -> WHILE ( opt_expr ) .)
+    STRING_LITERAL  reduce using rule 41 (while_header -> WHILE ( opt_expr ) .)
+    CHAR_LITERAL    reduce using rule 41 (while_header -> WHILE ( opt_expr ) .)
+    FLOAT_LITERAL   reduce using rule 41 (while_header -> WHILE ( opt_expr ) .)
+    INTEGER_LITERAL reduce using rule 41 (while_header -> WHILE ( opt_expr ) .)
 
 
 state 254
@@ -9219,7 +9219,7 @@ state 258
     (46) simple_stmt -> . break_stmt
     (47) simple_stmt -> . return_stmt
     (48) simple_stmt -> . print_stmt
-    (40) while_stmt_closed -> . while_cond closed_stmt
+    (40) while_stmt_closed -> . while_header closed_stmt
     (36) for_stmt_closed -> . for_header closed_stmt
     (32) if_stmt_closed -> . if_cond closed_stmt ELSE closed_stmt
     (60) expr -> . expr1
@@ -9233,7 +9233,7 @@ state 258
     (51) break_stmt -> . BREAK ;
     (50) return_stmt -> . RETURN opt_expr ;
     (49) print_stmt -> . PRINT opt_expr_list ;
-    (41) while_cond -> . WHILE ( opt_expr )
+    (41) while_header -> . WHILE ( opt_expr )
     (38) for_header -> . FOR ( opt_expr ; opt_expr ; opt_expr )
     (35) if_cond -> . IF ( opt_expr )
     (61) expr1 -> . tern_op
@@ -9338,7 +9338,7 @@ state 258
     break_stmt                     shift and go to state 144
     return_stmt                    shift and go to state 145
     print_stmt                     shift and go to state 146
-    while_cond                     shift and go to state 251
+    while_header                   shift and go to state 251
     for_header                     shift and go to state 252
     expr1                          shift and go to state 41
     class_decl                     shift and go to state 5
@@ -9407,7 +9407,7 @@ state 261
     (46) simple_stmt -> . break_stmt
     (47) simple_stmt -> . return_stmt
     (48) simple_stmt -> . print_stmt
-    (40) while_stmt_closed -> . while_cond closed_stmt
+    (40) while_stmt_closed -> . while_header closed_stmt
     (36) for_stmt_closed -> . for_header closed_stmt
     (32) if_stmt_closed -> . if_cond closed_stmt ELSE closed_stmt
     (60) expr -> . expr1
@@ -9421,7 +9421,7 @@ state 261
     (51) break_stmt -> . BREAK ;
     (50) return_stmt -> . RETURN opt_expr ;
     (49) print_stmt -> . PRINT opt_expr_list ;
-    (41) while_cond -> . WHILE ( opt_expr )
+    (41) while_header -> . WHILE ( opt_expr )
     (38) for_header -> . FOR ( opt_expr ; opt_expr ; opt_expr )
     (61) expr1 -> . tern_op
     (62) expr1 -> . expr2
@@ -9526,7 +9526,7 @@ state 261
     break_stmt                     shift and go to state 144
     return_stmt                    shift and go to state 145
     print_stmt                     shift and go to state 146
-    while_cond                     shift and go to state 251
+    while_header                   shift and go to state 251
     for_header                     shift and go to state 252
     expr1                          shift and go to state 41
     class_decl                     shift and go to state 5
@@ -9689,7 +9689,7 @@ state 267
     (46) simple_stmt -> . break_stmt
     (47) simple_stmt -> . return_stmt
     (48) simple_stmt -> . print_stmt
-    (40) while_stmt_closed -> . while_cond closed_stmt
+    (40) while_stmt_closed -> . while_header closed_stmt
     (36) for_stmt_closed -> . for_header closed_stmt
     (32) if_stmt_closed -> . if_cond closed_stmt ELSE closed_stmt
     (60) expr -> . expr1
@@ -9703,7 +9703,7 @@ state 267
     (51) break_stmt -> . BREAK ;
     (50) return_stmt -> . RETURN opt_expr ;
     (49) print_stmt -> . PRINT opt_expr_list ;
-    (41) while_cond -> . WHILE ( opt_expr )
+    (41) while_header -> . WHILE ( opt_expr )
     (38) for_header -> . FOR ( opt_expr ; opt_expr ; opt_expr )
     (35) if_cond -> . IF ( opt_expr )
     (61) expr1 -> . tern_op
@@ -9808,7 +9808,7 @@ state 267
     break_stmt                     shift and go to state 144
     return_stmt                    shift and go to state 145
     print_stmt                     shift and go to state 146
-    while_cond                     shift and go to state 251
+    while_header                   shift and go to state 251
     for_header                     shift and go to state 252
     expr1                          shift and go to state 41
     class_decl                     shift and go to state 5

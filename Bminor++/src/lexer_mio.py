@@ -29,8 +29,8 @@ class Lexer(sly.Lexer):
     # LITERALES
     FLOAT_LITERAL   = r'(([0-9]+\.[0-9]*|[0-9]*\.[0-9]+)([eE][+-]?[0-9]+)?)|([0-9]+[eE][+-]?[0-9]+)'
     INTEGER_LITERAL = r'[1-9][0-9]*|0'
-    STRING_LITERAL  = r'"(\\[abefnrtv\'"\\]|[\x20-\x21\x23-\x26\x28-\x5B\x5D-\x7E])*"'
-    CHAR_LITERAL    = r"'(\\([abefnrtv'\"\\]|0x[0-9A-F]{2})|[\x20-\x21\x23-\x26\x28-\x5B\x5D-\x7E])'"
+    STRING_LITERAL  = r'"(\\[abefnrtv\'"\\]|[\x20-\x21\x23-\x5B\x5D-\x7E])*"'
+    CHAR_LITERAL    = r"'(\\([abefnrtv'\"\\]|0x[0-9A-F]{2})|[\x20-\x26\x28-\x5B\x5D-\x7E])'"
 
     # Definición de Tokens (Identificador)
     ID = r'[a-zA-Z_][a-zA-Z0-9_]*'

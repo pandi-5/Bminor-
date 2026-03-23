@@ -1,11 +1,15 @@
 # grammar.py (versión actualizada para nuevo AST)
+# Librerias
 import logging
 import sly
-from rich import print
+from rich import print as rprint
+from graphviz import Digraph
 
+# Archivos propios
 from model import *
 from lexer_mio  import Lexer
 from errors import error, errors_detected
+from visualizer import build_rich_tree, build_graphviz
 
 def _L(node, lineno):
 	node.lineno = lineno
@@ -25,8 +29,9 @@ class Parser(sly.Parser):
 	
 	@_("decl_list")
 	def prog(self, p):
-		return p.decl_list
-	
+		nodo = Program(p.decl_list)
+		return _L(nodo, 1)
+
 	# =================================================
 	# LISTAS DE DECLARACIONES
 	# =================================================
@@ -47,7 +52,8 @@ class Parser(sly.Parser):
 	@_("ID ':' type_array_sized ';'")
 	@_("ID ':' type_simple ';'")
 	def decl(self, p):
-		return ('SIMPLE_DECL', p.ID, p[2])
+		nodo = SimpleDecl(p.ID, p[2])
+		return _L(nodo, p.lineno)
 
 	@_("decl_init")
 	@_("class_decl")	
@@ -59,12 +65,14 @@ class Parser(sly.Parser):
 	@_("ID ':' CONSTANT '=' expr ';'")
 	@_("ID ':' type_simple '=' expr ';'")
 	def decl_init(self, p):
-		return ('INIT_DECL', p.ID, p[2], p.expr)
+		nodo = InitDecl(p.ID, p[2], p[4])
+		return _L(nodo, p.lineno)
 
 	@_("ID ':' type_func '=' '{' opt_stmt_list '}'")	
 	@_("ID ':' type_array_sized '=' '{' opt_expr_list '}' ';'")
 	def decl_init(self, p):
-		return ('INIT_DECL', p.ID, p[2], p[5])
+		nodo = InitDecl(p.ID, p[2], p[5])
+		return _L(nodo, p.lineno)
 
 	# =================================================
 	# CLASES
@@ -72,7 +80,8 @@ class Parser(sly.Parser):
 
 	@_("CLASS ':' ID class_body")	
 	def class_decl(self, p):
-		return ('CLASS_DECL', p.ID, p.class_body)
+		nodo = ClassDecl(p.ID, p[3])
+		return _L(nodo, p.lineno)
 
 	@_("'{' class_member_list '}'")	
 	def class_body(self, p):
@@ -135,15 +144,18 @@ class Parser(sly.Parser):
 	
 	@_("if_cond closed_stmt ELSE closed_stmt")
 	def if_stmt_closed(self, p):
-		return ('IF', p.if_cond, p[1], p[3])
+		nodo = If(p.if_cond, p[1], p[3])
+		return _L(nodo, p.lineno)
 	
 	@_("if_cond closed_stmt ELSE if_stmt_open")
 	def if_stmt_open(self, p):
-		return ('IF', p.if_cond, p[1], p[3])
+		nodo = If(p.if_cond, p[1], p[3])
+		return _L(nodo, p.lineno)
 
 	@_("if_cond stmt")
 	def if_stmt_open(self, p):
-		return ('IF', p.if_cond, p.stmt, None)
+		nodo = If(p.if_cond, p[1], None)
+		return _L(nodo, p.lineno)
 
 	@_("IF '(' opt_expr ')'")
 	def if_cond(self, p):
@@ -155,30 +167,34 @@ class Parser(sly.Parser):
 	
 	@_("for_header closed_stmt")
 	def for_stmt_closed(self, p):
-		return ('FOR', p.for_header, p.closed_stmt)
+		nodo = For(p.for_header, p[1])
+		return _L(nodo, p.lineno)
 
 	@_("for_header open_stmt")
 	def for_stmt_open(self, p):
-		return ('FOR', p.for_header, p.open_stmt)
+		nodo = For(p.for_header, p[1])
+		return _L(nodo, p.lineno)
 
 	@_("FOR '(' opt_expr ';' opt_expr ';' opt_expr ')'")
 	def for_header(self, p):
-		return (p[2], p[4], p[6])
+		return [p[2], p[4], p[6]]
 		
 	# -------------------------------------------------
 	# WHILE
 	# -------------------------------------------------
 		
-	@_("while_cond open_stmt")
+	@_("while_header open_stmt")
 	def while_stmt_open(self, p):
-		return ('WHILE', p.while_cond, p.open_stmt)
+		nodo = While(p.while_header, p[1])
+		return _L(nodo, p.lineno)
 		
-	@_("while_cond closed_stmt")
+	@_("while_header closed_stmt")
 	def while_stmt_closed(self, p):
-		return ('WHILE', p.while_cond, p.closed_stmt)
-	
+		nodo = While(p.while_header, p[1])
+		return _L(nodo, p.lineno)
+
 	@_("WHILE '(' opt_expr ')'")
-	def while_cond(self, p):
+	def while_header(self, p):
 		return p.opt_expr
 		
 	# -------------------------------------------------
@@ -198,20 +214,24 @@ class Parser(sly.Parser):
 	# PRINT
 	@_("PRINT opt_expr_list ';'")
 	def print_stmt(self, p):
-		return ('PRINT', p.opt_expr_list)
-		
+		nodo = Print(p.opt_expr_list)
+		return _L(nodo, p.lineno)
+	
 	# RETURN
 	@_("RETURN opt_expr ';'")
 	def return_stmt(self, p):
-		return ('RETURN', p.opt_expr)
+		nodo = Return(p.opt_expr)
+		return _L(nodo, p.lineno)
 
 	@_("BREAK ';'")
 	def break_stmt(self, p):
-		return ('BREAK',)		# Se deja como tupla para facilitar acceso
+		nodo = Break()
+		return _L(nodo, p.lineno)
 
 	@_("CONTINUE ';'")
 	def continue_stmt(self, p):
-		return ('CONTINUE',)	# Se deja como tupla para facilitar acceso
+		nodo = Continue()
+		return _L(nodo, p.lineno)
 
 	# BLOCK
 	@_("'{' stmt_list '}'")
@@ -261,7 +281,8 @@ class Parser(sly.Parser):
 	@_("lval DIVEQ expr1")
 	@_("lval MODEQ expr1")
 	def expr1(self, p):
-		return (p[1], p[0], p[2])
+		nodo = Assignment(p.lval, p[1], p.expr1)
+		return _L(nodo, p.lineno)
 		
 	@_("expr2")
 	@_("tern_op")
@@ -272,7 +293,8 @@ class Parser(sly.Parser):
 
 	@_("expr2 '?' tern_op ':' tern_op")
 	def tern_op(self, p):
-		return ('TERNARY', p.expr2, p[2], p[4])
+		nodo = TernaryOp(p.expr2, p[2], p[4])
+		return _L(nodo, p.lineno)
 	
 	@_("expr2")
 	def tern_op(self, p):
@@ -282,15 +304,18 @@ class Parser(sly.Parser):
 	
 	@_("ID")
 	def lval(self, p):
-		return ('ID', p.ID)
+		node = Id(p.ID)
+		return _L(node, p.lineno)
 		
 	@_("ID index")
 	def lval(self, p):
-		return ('INDEX_ID', p.ID, p[1])
+		node = IdIndex(p.ID, p[1])
+		return _L(node, p.lineno)
 	
 	@_("THIS '.' ID")
 	def lval(self, p):
-		return ('GET_ATTR', 'this', p.ID)
+		node = GetAttr('this', p.ID)
+		return _L(node, p.lineno)
 		
 	# -------------------------------------------------
 	# OPERADORES
@@ -298,15 +323,17 @@ class Parser(sly.Parser):
 	
 	@_("expr2 LOR expr3")
 	def expr2(self, p):
-		return (p.LOR, p.expr2, p.expr3)
-		
+		node = BinaryOp(p.expr2, p.LOR, p.expr3)
+		return _L(node, p.lineno)
+
 	@_("expr3")
 	def expr2(self, p):
 		return p.expr3
 		
 	@_("expr3 LAND expr4")
 	def expr3(self, p):
-		return (p.LAND, p.expr3, p.expr4)
+		node = BinaryOp(p.expr3, p.LAND, p.expr4)
+		return _L(node, p.lineno)
 		
 	@_("expr4")
 	def expr3(self, p):
@@ -319,17 +346,19 @@ class Parser(sly.Parser):
 	@_("expr4 GT expr5")
 	@_("expr4 GE expr5")
 	def expr4(self, p):
-		return (p[1], p[0], p[2])
+		node = BinaryOp(p.expr4, p[1], p.expr5)
+		return _L(node, p.lineno)
 
 	@_("expr5")
 	def expr4(self, p):
-		return p.expr5 
+		return p.expr5
 		
 	@_("expr5 '+' expr6")
 	@_("expr5 '-' expr6")
 	def expr5(self, p):
-		return (p[1], p.expr5, p.expr6)
-		
+		node = BinaryOp(p.expr5, p[1], p.expr6)
+		return _L(node, p.lineno)
+
 	@_("expr6")
 	def expr5(self, p):
 		return p.expr6
@@ -338,16 +367,18 @@ class Parser(sly.Parser):
 	@_("expr6 '/' expr7")
 	@_("expr6 '%' expr7")
 	def expr6(self, p):
-		return (p[1], p.expr6, p.expr7)
-		
+		node = BinaryOp(p.expr6, p[1], p.expr7)
+		return _L(node, p.lineno)
+
 	@_("expr7")
 	def expr6(self, p):
 		return p.expr7
 		
 	@_("expr7 '^' expr8")
 	def expr7(self, p):
-		return (p[1], p.expr7, p.expr8)
-		
+		node = BinaryOp(p.expr7, p[1], p.expr8)
+		return _L(node, p.lineno)
+
 	@_("expr8")
 	def expr7(self, p):
 		return p.expr8
@@ -359,12 +390,13 @@ class Parser(sly.Parser):
 	def expr8(self, p):
 		operador = p[0]
 		if operador == '++':
-			return ('PRE_INC', p.expr8)
+			nodo = UnaryOp('PRE_INC', p.expr8)
 		elif operador == '--':
-			return ('PRE_DEC', p.expr8)
+			nodo = UnaryOp('PRE_DEC', p.expr8)
 		else:
-			return (operador, p.expr8)
-		
+			nodo = UnaryOp(operador, p.expr8)
+		return _L(nodo, p.lineno)
+
 	@_("expr9")
 	def expr8(self, p):
 		return p.expr9
@@ -374,9 +406,10 @@ class Parser(sly.Parser):
 	def expr9(self, p):
 		operador = p[1]
 		if operador == '++':
-			return ('POST_INC', p.expr9)
+			nodo = UnaryOp('POST_INC', p.expr9)
 		else:
-			return ('POST_DEC', p.expr9)
+			nodo = UnaryOp('POST_DEC', p.expr9)
+		return _L(nodo, p.lineno)
 
 	@_("group")
 	def expr9(self, p):
@@ -388,11 +421,13 @@ class Parser(sly.Parser):
 		
 	@_("ID '(' opt_expr_list ')'")
 	def group(self, p):
-		return ('CALL', p.ID, p.opt_expr_list)
-		
+		nodo = Call(p.ID, p.opt_expr_list)
+		return _L(nodo, p.lineno)
+	
 	@_("ID index")
 	def group(self, p):
-		return ('INDEX_ID', p.ID, p[1])
+		nodo = IdIndex(p.ID, p[1])
+		return _L(nodo, p.lineno)
 
 	@_("factor")
 	@_("member_access")
@@ -403,22 +438,26 @@ class Parser(sly.Parser):
 	# INSTANCIA DE UN OBJETO
 	@_("NEW ID '(' opt_expr_list ')'")
 	def object_instantiation(self, p):
-		return('NEW_INSTANCE', p.ID, p.opt_expr_list)
+		nodo = NewInstance(p.ID, p.opt_expr_list)
+		return _L(nodo, p.lineno)
 	
 	# ACCESO A MIEMBRO DE CLASE
 	@_("ID '.' ID")
 	@_("member_access '.' ID")
 	def member_access(self, p):
-		return('GET_ATTR', p[0], p[2])
+		nodo = GetAttr(p[0], p[2])
+		return _L(nodo, p.lineno)
 	
 	@_("THIS '.' ID")
 	def member_access(self, p):
-		return('GET_ATTR', 'this', p[2])
-	
+		nodo = GetAttr('this', p[2])
+		return _L(nodo, p.lineno)
+
 	@_("member_access '(' opt_expr_list ')'")
 	def member_access(self, p):
-		return('METHOD_CALL', p[0], p[2])
-	
+		nodo = MethodCall(p[0], p[2])
+		return _L(nodo, p.lineno)
+
 	# LISTA DE INDICES
 	@_("index_list index")
 	def index_list(self, p):
@@ -439,37 +478,45 @@ class Parser(sly.Parser):
 	
 	@_("ID")
 	def factor(self, p):
-		return ('ID', p.ID)
+		node = Id(p.ID)
+		return _L(node, p.lineno)
 		
 	@_("INTEGER_LITERAL")
 	def factor(self, p):
-		return ('INTEGER_LITERAL', int(p[0]))
-		
+		nodo = Literal('INTEGER_LITERAL', int(p[0]))
+		return _L(nodo, p.lineno)
+
 	@_("FLOAT_LITERAL")
 	def factor(self, p):
-		return ('FLOAT_LITERAL', float(p[0]))
+		nodo = Literal('FLOAT_LITERAL', float(p[0]))
+		return _L(nodo, p.lineno)
 		
 	@_("CHAR_LITERAL")
 	def factor(self, p):
 		texto_limpio = p.CHAR_LITERAL[1:-1]
-		return ('CHAR_LITERAL', texto_limpio)
+		nodo = Literal('CHAR_LITERAL', texto_limpio)
+		return _L(nodo, p.lineno)
 		
 	@_("STRING_LITERAL")
 	def factor(self, p):
 		texto_limpio = p.STRING_LITERAL[1:-1]
-		return ('STRING_LITERAL', texto_limpio)
+		nodo = Literal('STRING_LITERAL', texto_limpio)
+		return _L(nodo, p.lineno)
 		
 	@_("TRUE")
 	def factor(self, p):
-		return ('BOOLEAN', True)
-	
+		nodo = Literal('BOOLEAN', True)
+		return _L(nodo, p.lineno)
+
 	@_("FALSE")
 	def factor(self, p):
-		return ('BOOLEAN', False)
+		nodo = Literal('BOOLEAN', False)
+		return _L(nodo, p.lineno)
 
 	@_("THIS")
 	def factor(self, p):
-		return ('THIS',)
+		nodo = Id('this')
+		return _L(nodo, p.lineno)
 		
 	# =================================================
 	# TIPOS
@@ -488,17 +535,20 @@ class Parser(sly.Parser):
 	@_("ARRAY '[' ']' type_simple")
 	@_("ARRAY '[' ']' type_array")
 	def type_array(self, p):
-		return('ARRAY', p[3])
+		nodo = Array(p[3], None)
+		return _L(nodo, p.lineno)
 		
 	@_("ARRAY index type_simple")
 	@_("ARRAY index type_array_sized")
 	def type_array_sized(self, p):
-		return('ARRAY', p[1], p[2])
+		nodo = Array(p[2], p[1])
+		return _L(nodo, p.lineno)
 		
 	@_("FUNCTION type_simple '(' opt_param_list ')'")
 	@_("FUNCTION type_array_sized '(' opt_param_list ')'")
 	def type_func(self, p):
-		return('FUNCTION', p[1], p[3])
+		nodo = Function(p[1], p.opt_param_list)
+		return _L(nodo, p.lineno)
 		
 	@_("empty")
 	def opt_param_list(self, p):
@@ -515,18 +565,13 @@ class Parser(sly.Parser):
 	@_("param")
 	def param_list(self, p):
 		return [p.param]
-		
+
+	@_("ID ':' type_array_sized")	
+	@_("ID ':' type_array")
 	@_("ID ':' type_simple")
 	def param(self, p):
-		return ('PARAM_DECL', p.ID, p.type_simple)
-		
-	@_("ID ':' type_array")
-	def param(self, p):
-		return ('PARAM_DECL', p.ID, p.type_array)
-		
-	@_("ID ':' type_array_sized")
-	def param(self, p):
-		return ('PARAM_DECL', p.ID, p.type_array_sized)
+		nodo = ParamDecl(p.ID, p[2])
+		return _L(nodo, p.lineno)
 		
 	# =================================================
 	# UTILIDAD: EMPTY
@@ -571,27 +616,60 @@ def parse(txt):
 	
 	
 if __name__ == '__main__':
-	import sys, json
-	
-	if sys.platform != 'ios':
-	
-		if len(sys.argv) != 2:
-			raise SystemExit("Usage: python gparse.py <filename>")
-			
-		filename = sys.argv[1]
-		
-	else:
-		from file_picker import file_picker_dialog
-		
-		filename = file_picker_dialog(
-			title='Seleccionar una archivo',
-			root_dir='./test/',
-			file_pattern='^.*[.]bpp'
-		)
-		
-	if filename:
-		txt = open(filename, encoding='utf-8').read()
-		ast = parse(txt)
-		
-		if not errors_detected():
-			print(ast)
+    import sys, json, os
+    
+    if sys.platform != 'ios':
+        if len(sys.argv) != 2:
+            raise SystemExit("Usage: python gparse.py <filename>")
+        filename = sys.argv[1]
+    else:
+        from file_picker import file_picker_dialog
+        filename = file_picker_dialog(
+            title='Seleccionar un archivo',
+            root_dir='./test/',
+            file_pattern='^.*[.]bpp'
+        )
+        
+    if filename:
+        txt = open(filename, encoding='utf-8').read()
+        ast = parse(txt)
+
+        if not errors_detected() and ast is not None:
+            
+            # --- EL NUEVO MENÚ INTERACTIVO ---
+            print("\n" + "="*40)
+            print("AST generado correctamente.")
+            print("Como deseas visualizar el arbol?")
+            print("  1. Solo en Consola (Rich)")
+            print("  2. Solo como Imagen (Graphviz)")
+            print("  3. Ambos")
+            print("="*40)
+            
+            opcion = input("Elige una opción (1/2/3): ").strip()
+            
+            if opcion in ['1', '3']:
+                # Consola (Rich)
+                print("\n--- ÁRBOL EN CONSOLA ---")
+                arbol_rich = build_rich_tree(ast)
+                rprint(arbol_rich)
+                
+            if opcion in ['2', '3']:
+                # Imagen (Graphviz)
+                print("\n--- GENERANDO IMAGEN ---")
+                dot = Digraph(comment='AST B-Minor')
+                build_graphviz(ast, dot)
+                
+                nombre_base = os.path.basename(filename)
+                nombre_sin_ext = os.path.splitext(nombre_base)[0]
+                nombre_archivo = f"ast_{nombre_sin_ext}"
+                
+                ruta_salida = os.path.join("Bminor++", "images", nombre_archivo)
+                
+                dot.render(ruta_salida, format="png", cleanup=True)
+                print(f"Imagen generada en: {ruta_salida}.png")
+                
+            if opcion not in ['1', '2', '3']:
+                print("Opcion invalida.")
+                
+        else:
+            print("Errores sintacticos. No se pudo generar el AST.")
