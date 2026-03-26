@@ -1,4 +1,4 @@
 /* Array as return type does not specify size */
-main: function array [] (a: array [] integer)  {
+main: function array [] integer (a: array [] integer) = {
     return 0;
 }

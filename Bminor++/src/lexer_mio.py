@@ -36,29 +36,30 @@ class Lexer(sly.Lexer):
     ID = r'[a-zA-Z_][a-zA-Z0-9_]*'
 
     # PALABRAS RESERVADAS
-    ID['array']    = ARRAY
-    ID['auto']     = AUTO
-    ID['boolean']  = BOOLEAN
-    ID['char']     = CHAR
-    ID['else']     = ELSE
-    ID['true']     = TRUE
-    ID['false']    = FALSE
-    ID['float']    = FLOAT
-    ID['for']      = FOR
-    ID['function'] = FUNCTION
-    ID['if']       = IF
-    ID['integer']  = INTEGER
-    ID['print']    = PRINT
-    ID['return']   = RETURN
-    ID['string']   = STRING
-    ID['void']     = VOID
-    ID['while']    = WHILE
-    ID['class']    = CLASS
-    ID['new']      = NEW
-    ID['this']     = THIS
-    ID['constant'] = CONSTANT
-    ID['break']    = BREAK
-    ID['continue'] = CONTINUE
+    ID['array']     = ARRAY
+    ID['auto']      = AUTO
+    ID['boolean']   = BOOLEAN
+    ID['char']      = CHAR
+    ID['else']      = ELSE
+    ID['true']      = TRUE
+    ID['false']     = FALSE
+    ID['float']     = FLOAT
+    ID['for']       = FOR
+    ID['function']  = FUNCTION
+    ID['func']      = FUNCTION
+    ID['if']        = IF
+    ID['integer']   = INTEGER
+    ID['print']     = PRINT
+    ID['return']    = RETURN
+    ID['string']    = STRING
+    ID['void']      = VOID
+    ID['while']     = WHILE
+    ID['class']     = CLASS
+    ID['new']       = NEW
+    ID['this']      = THIS
+    ID['constant']  = CONSTANT
+    ID['break']     = BREAK
+    ID['continue']  = CONTINUE
 
     # OPERADORES DE RELACION
     LE   = r'<='

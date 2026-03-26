@@ -12,14 +12,12 @@ def build_rich_tree(node, field_name=None):
         
     tree = Tree(label)
 
-    # 🪄 ESTA ES LA MAGIA: Una función que sabe abrir listas dentro de listas
     def procesar_coleccion(rama_padre, nombre, coleccion):
         tipo = type(coleccion).__name__
         rama_coleccion = rama_padre.add(f"[blue]{nombre}[/blue] ({tipo})")
         
         for item in coleccion:
             if isinstance(item, (list, tuple)):
-                # ¡Llamada recursiva! Si hay una lista adentro, la vuelve a abrir
                 procesar_coleccion(rama_coleccion, "group", item)
             elif hasattr(item, "__dict__"):
                 rama_coleccion.add(build_rich_tree(item))

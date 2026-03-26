@@ -16,11 +16,11 @@ from rich import print
 
 _errors_detected = 0
 
-def error(message, lineno=None, filename="<archivo>", error_type="Error"):
+def error(message, lineno=None, filename="<archivo>", error_type="Error", content_line=None):
     global _errors_detected
     
     if lineno:
-        print(f"[bold white]{filename}:{lineno}:[/bold white] [bold red]{error_type}:[/bold red] {message}")
+        print(f"[bold white]{filename}:line {lineno}: [/bold white]{content_line}\n[bold red]{error_type}:[/bold red] {message}")
     else:
         print(f"[bold red]{error_type}:[/bold red] {message}")
         

@@ -582,9 +582,20 @@ class Parser(sly.Parser):
 		pass
 		
 	def error(self, p):
+		code_lines = self.code.splitlines()
+		linetxt = code_lines[p.lineno - 1] if p and p.lineno <= len(code_lines) else ''
+		
+		inicio_linea = self.code.rfind('\n', 0, p.index) + 1
+		columna = p.index - inicio_linea
+
+		if linetxt:
+			linea_error = linetxt[:columna] + f"[bold white on red]{str(p.value)}[/bold white on red]" + linetxt[columna + len(str(p.value)):]
+		else:
+			linea_error = ""
+
 		lineno = p.lineno if p else 'EOF'
 		value = repr(p.value) if p else 'EOF'
-		error(f'Syntax error at {value}', lineno)
+		error(f'Syntax error at {value}', lineno, content_line=linea_error)
 		
 # ===================================================
 # Utilidad: convertir algo en bloque si no lo es
@@ -612,6 +623,7 @@ def ast_to_dict(node):
 def parse(txt):
 	l = Lexer()
 	p = Parser()
+	p.code = txt
 	return p.parse(l.tokenize(txt))
 	
 	
