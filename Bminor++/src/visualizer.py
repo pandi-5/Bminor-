@@ -41,31 +41,43 @@ def build_rich_tree(node, field_name=None):
 
     return tree
 
-# --- 2. Función para Graphviz (Imagen PNG) ---
-def build_graphviz(node, dot, parent_id=None):
+# --- 2. Función para Graphviz (Gráfico) ---
+def build_graphviz(node, dot, parent_id=None, edge_label=None):
     node_id = str(uuid.uuid4())
     label = type(node).__name__
 
-    # Creamos el nodo visual
+    # 1. Creamos el nodo visual (La caja azul)
     dot.node(node_id, label, shape="box", style="filled", fillcolor="lightblue")
 
+    # 2. Conectamos con el padre (¡AQUÍ PONEMOS EL NOMBRE EN LA FLECHA!)
     if parent_id:
-        dot.edge(parent_id, node_id)
+        if edge_label:
+            # Si hay una etiqueta (ej. 'value', 'left'), la dibujamos en la línea
+            dot.edge(parent_id, node_id, label=edge_label)
+        else:
+            dot.edge(parent_id, node_id)
 
+    # 3. Recorremos los atributos del nodo
     for field, value in vars(node).items():
         if field == 'lineno':
             continue
             
         if isinstance(value, list):
-            for item in value:
+            for i, item in enumerate(value):
                 if hasattr(item, "__dict__"):
-                    build_graphviz(item, dot, node_id)
+                    # TRUCO PRO: Si es una lista, le ponemos el índice a la flecha
+                    # Ejemplo: 'statements[0]', 'statements[1]'
+                    build_graphviz(item, dot, node_id, edge_label=f"{field}[{i}]")
+                    
         elif hasattr(value, "__dict__"):
-            build_graphviz(value, dot, node_id)
+            # Si el valor es otro nodo, le pasamos el nombre del atributo a la recursividad
+            build_graphviz(value, dot, node_id, edge_label=field)
+            
         else:
-            # Para valores simples, creamos un nodo "hoja"
+            # 4. Para valores simples (hojas)
+            # La flecha lleva el nombre del atributo, y el óvalo lleva SOLO el valor
             leaf_id = str(uuid.uuid4())
-            dot.node(leaf_id, f"{field}: {value}", shape="ellipse")
-            dot.edge(node_id, leaf_id)
+            dot.node(leaf_id, str(value), shape="ellipse")
+            dot.edge(node_id, leaf_id, label=field)
 
     return dot

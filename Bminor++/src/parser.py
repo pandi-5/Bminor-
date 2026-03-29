@@ -629,12 +629,20 @@ def parse(txt):
 	
 if __name__ == '__main__':
     import sys, json, os
+    import argparse  # Importamos el gestor de argumentos de Python
     
-    if sys.platform != 'ios':
-        if len(sys.argv) != 2:
-            raise SystemExit("Usage: python gparse.py <filename>")
-        filename = sys.argv[1]
-    else:
+    # CONFIGURACIÓN DE LOS ARGUMENTOS DE TERMINAL
+    parser = argparse.ArgumentParser(description="Compilador B-Minor AST Builder")
+    parser.add_argument("filename", nargs="?", help="Ruta al archivo .bpp a compilar")
+
+    # Banderas opcionales (action="store_true" significa que si las pones, valen True)
+    parser.add_argument("--rich", action="store_true", help="Muestra el AST en la consola usando Rich")
+    parser.add_argument("--graphviz", action="store_true", help="Genera una imagen PNG del AST con Graphviz")
+    args = parser.parse_args()
+    
+    filename = args.filename
+    
+    if sys.platform == 'ios' and not filename:
         from file_picker import file_picker_dialog
         filename = file_picker_dialog(
             title='Seleccionar un archivo',
@@ -642,46 +650,39 @@ if __name__ == '__main__':
             file_pattern='^.*[.]bpp'
         )
         
+    if not filename:
+        parser.print_help()
+        sys.exit("\nError: Debes proporcionar un archivo.")
+
+    # --- 3. COMPILACIÓN ---
     if filename:
         txt = open(filename, encoding='utf-8').read()
         ast = parse(txt)
 
         if not errors_detected() and ast is not None:
+            print("\nAST generado correctamente.")
             
-            # --- EL NUEVO MENÚ INTERACTIVO ---
-            print("\n" + "="*40)
-            print("AST generado correctamente.")
-            print("Como deseas visualizar el arbol?")
-            print("  1. Solo en Consola (Rich)")
-            print("  2. Solo como Imagen (Graphviz)")
-            print("  3. Ambos")
-            print("="*40)
-            
-            opcion = input("Elige una opción (1/2/3): ").strip()
-            
-            if opcion in ['1', '3']:
-                # Consola (Rich)
-                print("\n--- ÁRBOL EN CONSOLA ---")
+            # Si el usuario no puso ni --rich ni --graphviz
+            if not args.rich and not args.graphviz:
+                print("Usa las banderas --rich o --graphviz para visualizar el árbol.")
+                
+            if args.rich:
+                print("ÁRBOL EN CONSOLA\n")
                 arbol_rich = build_rich_tree(ast)
                 rprint(arbol_rich)
                 
-            if opcion in ['2', '3']:
-                # Imagen (Graphviz)
-                print("\n--- GENERANDO IMAGEN ---")
+            if args.graphviz:
+                print("GENERANDO IMAGEN")
                 dot = Digraph(comment='AST B-Minor')
                 build_graphviz(ast, dot)
                 
                 nombre_base = os.path.basename(filename)
                 nombre_sin_ext = os.path.splitext(nombre_base)[0]
                 nombre_archivo = f"ast_{nombre_sin_ext}"
-                
-                ruta_salida = os.path.join("Bminor++", "images", nombre_archivo)
-                
+                os.makedirs(os.path.join("images"), exist_ok=True)
+                ruta_salida = os.path.join("images", nombre_archivo)
                 dot.render(ruta_salida, format="png", cleanup=True)
-                print(f"Imagen generada en: {ruta_salida}.png")
-                
-            if opcion not in ['1', '2', '3']:
-                print("Opcion invalida.")
+                print(f"Imagen generada en: {ruta_salida}.png\n")
                 
         else:
-            print("Errores sintacticos. No se pudo generar el AST.")
+            print("Errores sintácticos. No se pudo generar el AST.")
