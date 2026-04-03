@@ -1,4 +1,4 @@
-func : function void () = {
+funct : function void () = {
     if (a > 1) {
         a = a - 1;
     } else {

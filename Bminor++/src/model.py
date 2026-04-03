@@ -16,8 +16,8 @@ class Node:
         return f"{class_name}({', '.join(atributos)})"
 
 class Program(Node):
-    def __init__(self, decls):
-        self.decls = decls
+    def __init__(self, nodeList):
+        self.nodeList = nodeList
 
 class SimpleDecl(Node):
     def __init__(self, varName, dataType):

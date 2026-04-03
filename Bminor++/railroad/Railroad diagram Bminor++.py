@@ -572,7 +572,7 @@ param = Diagram(
 Diagramas = [
     ("prog:", prog), ("decl_list:", decl_list), ("decl:", decl), ("decl_init:", decl_init), 
     ("class_decl:", class_decl), ("class_body:", class_body), ("class_member_list:", class_member_list),
-    ("class_member:", class_member), ("open_stmt_list:", opt_stmt_list), ("stmt_list:", stmt_list),
+    ("class_member:", class_member), ("opt_stmt_list:", opt_stmt_list), ("stmt_list:", stmt_list),
     ("stmt:", stmt), ("closed_stmt:", closed_stmt), ("open_stmt:", open_stmt), ("if_cond:", if_cond),
     ("if_stmt_closed:", if_stmt_closed), ("if_stmt_open:", if_stmt_open), ("for_header:", for_header), 
     ("for_stmt_closed:", for_stmt_closed), ("for_stmt_open:", for_stmt_open),

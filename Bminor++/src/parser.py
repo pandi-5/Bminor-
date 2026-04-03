@@ -214,13 +214,13 @@ class Parser(sly.Parser):
 	# PRINT
 	@_("PRINT opt_expr_list ';'")
 	def print_stmt(self, p):
-		nodo = Print(p.opt_expr_list)
+		nodo = Print(p[1])
 		return _L(nodo, p.lineno)
 	
 	# RETURN
 	@_("RETURN opt_expr ';'")
 	def return_stmt(self, p):
-		nodo = Return(p.opt_expr)
+		nodo = Return(p[1])
 		return _L(nodo, p.lineno)
 
 	@_("BREAK ';'")
@@ -264,7 +264,7 @@ class Parser(sly.Parser):
 		
 	@_("expr")
 	def opt_expr(self, p):
-		return [p.expr]
+		return p.expr
 		
 	# -------------------------------------------------
 	# PRIMARY

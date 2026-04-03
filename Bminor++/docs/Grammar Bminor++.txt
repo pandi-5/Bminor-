@@ -187,7 +187,7 @@ type_simple ::= 'INTEGER'
     | 'STRING'
     | 'VOID'
     | 'ID'                                                      // ID agregado a tipos simples 
-                                                                para el funcionamiento de acceso a miembro por .            
+                                                                // para el funcionamiento de acceso a miembro por .            
 
 type_array ::= 'ARRAY' '[' ']' type_simple
     | 'ARRAY' '[' ']' type_array
