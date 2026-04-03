@@ -1,0 +1,16 @@
+x: integer = 13;
+y: integer = 10;
+
+main: func integer () = {
+   if (true) {
+   print x;
+   } else {
+      print y;
+   }
+
+   i: integer = 0;
+   for( ; i < 1; ){
+      print i;  
+   }
+}
+
