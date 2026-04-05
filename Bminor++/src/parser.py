@@ -19,7 +19,7 @@ class Parser(sly.Parser):
 	log = logging.getLogger()
 	log.setLevel(logging.ERROR)
 	expected_shift_reduce = 1
-	debugfile='grammar.txt'
+	debugfile='docs/grammar.txt'
 	
 	tokens = Lexer.tokens
 	
