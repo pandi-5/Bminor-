@@ -236,7 +236,8 @@ class Parser(sly.Parser):
 	# BLOCK
 	@_("'{' stmt_list '}'")
 	def block_stmt(self, p):
-		return p.stmt_list
+		nodo = Block(p[1])
+		return _L(nodo, p.lineno)
 		
 	# =================================================
 	# EXPRESIONES
@@ -307,14 +308,19 @@ class Parser(sly.Parser):
 		node = Id(p.ID)
 		return _L(node, p.lineno)
 		
-	@_("ID index")
+	@_("lval index")
 	def lval(self, p):
-		node = IdIndex(p.ID, p[1])
+		node = IdIndex(p[0], p[1])
 		return _L(node, p.lineno)
 	
 	@_("THIS '.' ID")
 	def lval(self, p):
 		node = GetAttr('this', p.ID)
+		return _L(node, p.lineno)
+
+	@_("lval '.' ID")
+	def lval(self, p):
+		node = GetAttr(p[0], p[2])
 		return _L(node, p.lineno)
 		
 	# -------------------------------------------------
@@ -423,14 +429,14 @@ class Parser(sly.Parser):
 	def group(self, p):
 		nodo = Call(p.ID, p.opt_expr_list)
 		return _L(nodo, p.lineno)
-	
-	@_("ID index")
+
+	@_("lval '.' ID '(' opt_expr_list ')'")
 	def group(self, p):
-		nodo = IdIndex(p.ID, p[1])
+		nodo = MethodCall(p[0], p[2], p.opt_expr_list) 
 		return _L(nodo, p.lineno)
 
 	@_("factor")
-	@_("member_access")
+	@_("lval")
 	@_("object_instantiation")
 	def group(self, p):
 		return p[0]
@@ -439,23 +445,6 @@ class Parser(sly.Parser):
 	@_("NEW ID '(' opt_expr_list ')'")
 	def object_instantiation(self, p):
 		nodo = NewInstance(p.ID, p.opt_expr_list)
-		return _L(nodo, p.lineno)
-	
-	# ACCESO A MIEMBRO DE CLASE
-	@_("ID '.' ID")
-	@_("member_access '.' ID")
-	def member_access(self, p):
-		nodo = GetAttr(p[0], p[2])
-		return _L(nodo, p.lineno)
-	
-	@_("THIS '.' ID")
-	def member_access(self, p):
-		nodo = GetAttr('this', p[2])
-		return _L(nodo, p.lineno)
-
-	@_("member_access '(' opt_expr_list ')'")
-	def member_access(self, p):
-		nodo = MethodCall(p[0], p[2])
 		return _L(nodo, p.lineno)
 
 	# LISTA DE INDICES

@@ -67,6 +67,10 @@ class Continue(Node):
     def __init__(self):
         pass
 
+class Block(Node):
+    def __init__(self, stmtList):
+        self.stmtList = stmtList
+
 class Assignment(Node):
     def __init__(self, leftVal, operator, value):
         self.leftVal = leftVal
@@ -74,18 +78,18 @@ class Assignment(Node):
         self.value = value
 
 class TernaryOp(Node):
-    def __init__(self, condition, ifBody, elseBody):
+    def __init__(self, condition, trueBody, falseBody):
         self.condition = condition
-        self.ifBody = ifBody
-        self.elseBody = elseBody
+        self.trueBody = trueBody
+        self.falseBody = falseBody
 
 class Id(Node):
     def __init__(self, name):
         self.name = name
 
 class IdIndex(Node):
-    def __init__(self, varName, index):
-        self.varName = varName
+    def __init__(self, leftNode, index):
+        self.leftNode = leftNode
         self.index = index
 
 class GetAttr(Node):
@@ -110,12 +114,13 @@ class Call(Node):
         self.params = params    
 
 class NewInstance(Node):
-    def __init__(self, className, params):
-        self.className = className
+    def __init__(self, classType, params):
+        self.classType = classType
         self.params = params
 
 class MethodCall(Node):
-    def __init__(self, methodName, params):
+    def __init__(self, owner, methodName, params):
+        self.owner = owner
         self.methodName = methodName
         self.params = params
 

@@ -110,8 +110,9 @@ tern_op ::= expr2 '?' tern_op ':' tern_op
     | expr2
 
 lval ::= 'ID'
-    | 'ID' index
     | 'THIS' '.' 'ID'
+    | lval index
+    | lval '.' 'ID'
 
 expr2 ::= expr2 'LOR' expr3
     | expr3
@@ -152,17 +153,12 @@ expr9 ::= expr9 'INC'
 
 group ::= '(' expr ')'
     | 'ID' '(' opt_expr_list ')'
-    | 'ID' index
+    | lval '.' 'ID' '(' opt_expr_list ')'
     | factor
     | object_instantiation                                      // instanciación de objeto agregada
-    | member_access                                             // acceso a miembro de clase agregada
+    | lval                                                      // acceso a miembro de clase por medio de misma logica que lval
 
 object_instantiation ::= 'NEW' 'ID' '(' opt_expr_list ')'       // NonTerminal para la instanciación de objeto
-
-member_access ::= 'ID' '.' 'ID'                                 //NonTerminal para el acceso a miembros de clase
-    | 'THIS' '.' 'ID' 
-    | member_access '.' 'ID'
-    | member_access '(' opt_expr_list ')'
 
 index_list ::= index_list index
 		| index
