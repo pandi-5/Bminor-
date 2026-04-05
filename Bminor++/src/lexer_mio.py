@@ -111,7 +111,7 @@ class Lexer(sly.Lexer):
         print(f"{self.lineno}: Carácter '{t.value[0]}' ilegal")
         self.index += 1
 
-    literals = '+-*/%^=,.:;()[]{}`'
+    literals = '+-*/%^=,.:;()[]{}?`'
 
     # Patrones a Ignorar
     ignore = ' \t\r'        # Whitespace
