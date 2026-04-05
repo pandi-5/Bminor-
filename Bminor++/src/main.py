@@ -3,6 +3,7 @@ import argparse
 from parser import Parser
 from lexer_mio import Lexer
 from checker import Checker
+import errors
 
 def compilar(filename):
     try:
@@ -19,20 +20,22 @@ def compilar(filename):
     if ast is None:
         print("Error: El código tiene errores de sintaxis. No se pudo generar el AST.")
         return
-
-    # --- PASO 3: CHECKER (Análisis Semántico) ---
-    checker = Checker()
-    checker.visit(ast)
-
-    # --- PASO 4: REPORTE DE RESULTADOS ---
-    if len(checker.errors) > 0:
-        print("SE ENCONTRARON ERRORES SEMÁNTICOS")
-        print("-" * 40)
-        for error in checker.errors:
-            print(error)
-        print("-" * 40)
     else:
-        print("Compilación exitosa. ¡El código es semánticamente correcto!")
+        if errors.errors_detected() == 0:
+            checker = Checker()
+            checker.visit(ast)
+        
+            if len(checker.errors) > 0:
+                print("SE ENCONTRARON ERRORES SEMÁNTICOS")
+                print("-" * 40)
+                for error in checker.errors:
+                    print(error)
+                print("-" * 40)
+            else:
+                print("Compilación exitosa. ¡El código es semánticamente correcto!")
+        else:
+            print("Se econtraron errores de sintaxis. No se realizó el chequeo semántico.")
+            print(f"Total de errores de sintaxis: {errors.errors_detected()}")
 
 
 if __name__ == '__main__':
