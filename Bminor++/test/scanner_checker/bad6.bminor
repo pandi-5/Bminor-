@@ -1,0 +1,16 @@
+/* Loop */
+
+var: integer;
+
+main: function void () = {
+    newt: float = 3.14;
+    if (newt + 1.1)
+        newt++;
+    else
+        newt--;
+
+    if (var && var)
+        var++;
+    else
+        var--;
+}
