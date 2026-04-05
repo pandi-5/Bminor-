@@ -26,7 +26,9 @@ _bin_ops = {
 	('integer', '*', 'integer') : 'integer',
 	('integer', '/', 'integer') : 'integer',
 	('integer', '%', 'integer') : 'integer',
+	('integer', '^', 'integer') : 'integer',
 
+	# Integer assignment and compound assignment
 	('integer', '=', 'integer') : 'integer',
 	('integer', 'ADDEQ', 'integer') : 'integer',
 	('integer', 'SUBEQ', 'integer') : 'integer',
@@ -34,6 +36,7 @@ _bin_ops = {
 	('integer', 'DIVEQ', 'integer') : 'integer',
 	('integer', 'MODEQ', 'integer') : 'integer',
 
+	# Integer comparisons
 	('integer', '<', 'integer')  : 'boolean',
 	('integer', '<=', 'integer') : 'boolean',
 	('integer', '>', 'integer')  : 'boolean',
@@ -47,7 +50,9 @@ _bin_ops = {
 	('float', '*', 'float') : 'float',
 	('float', '/', 'float') : 'float',
 	('float', '%', 'float') : 'float',
+	('float', '^', 'float') : 'float',
 
+	# Float assignment and compound assignment
 	('float', '=', 'float') : 'float',
 	('float', 'ADDEQ', 'float') : 'float',
 	('float', 'SUBEQ', 'float') : 'float',
@@ -55,6 +60,7 @@ _bin_ops = {
 	('float', 'DIVEQ', 'float') : 'float',
 	('float', 'MODEQ', 'float') : 'float',
 
+	# float comparisons
 	('float', '<', 'float')  : 'boolean',
 	('float', '<=', 'float') : 'boolean',
 	('float', '>', 'float')  : 'boolean',
@@ -68,9 +74,13 @@ _bin_ops = {
 	('boolean', '==', 'boolean') : 'boolean',
 	('boolean', '!=', 'boolean') : 'boolean',
 
-	# Char
+	# Boolean assignment
+	('boolean', '=', 'boolean') : 'boolean',
+
+	# Char assignment
 	('char', '=', 'char')  : 'char',
 
+	# Char comparisons
 	('char', '<', 'char')  : 'boolean',
 	('char', '<=', 'char') : 'boolean',
 	('char', '>', 'char')  : 'boolean',
@@ -78,9 +88,10 @@ _bin_ops = {
 	('char', '==', 'char') : 'boolean',
 	('char', '!=', 'char') : 'boolean',
 	
-	# Strings
+	# Strings operations
 	('string', '+', 'string') : 'string',
 	
+	# String assignment
 	('string', '=', 'string') : 'string',
 }
 
