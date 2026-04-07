@@ -46,10 +46,17 @@ class Checker(Visitor):
                 # visitamos la cabecera de la función para registrar sus parámetros y obtener su tipo de retorno
                 self.funcReturnType = self.visit(node.dataType)
 
+                # bandera para rastrear si encontramos un return dentro del cuerpo de la función
+                self.hasReturned = False
+
                 # visitamos el cuerpo de la función (si es que tiene)
                 if node.value is not None:
                     for stmt in node.value:
                         self.visit(stmt)
+                
+                # al terminar de visitar el cuerpo de la función, verificamos si se esperaba un retorno de valor y no se encontró ningún return o el return encontrado no retorna un valor (en caso de funciones que esperan retornar un valor distinto a void)
+                if self.funcReturnType != 'void' and not self.hasReturned:
+                    self.errors.append(f"Error: Linea {node.lineno}: La función '{node.varName}' no retorna ningún valor. Se esperaba un retorno de tipo '{self.funcReturnType}'.")
 
                 # al terminar, volvemos al scope padre
                 self.symtab = scope_parent
@@ -172,7 +179,9 @@ class Checker(Visitor):
         # validamos que estemos realmente dentro de una función
         if funcReturnType is None:
             self.errors.append(f"Error: Linea {node.lineno}: Sentencia 'return' fuera del cuerpo de una función.")
-            return 'void'
+            return 'error'
+
+        self.hasReturned = True
 
         # si el valor de retorno es None, lo consideramos como 'void' para la comparación de tipos
         if node.value is None:
