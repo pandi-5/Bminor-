@@ -145,8 +145,8 @@ Rule 141   empty -> <empty>
 
 Unused terminals:
 
-    BOOLEAN_LITERAL
     AUTO
+    BOOLEAN_LITERAL
 
 Terminals, with rules where they appear:
 
