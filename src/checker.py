@@ -1,16 +1,72 @@
 from multimethod import multimeta, multimethod
+from typing import Any, Optional
+from dataclasses import dataclass
 from symtab import Symtab
 import typesys
 from model import *
+
+@dataclass
+class Symbol:
+	name: str
+	kind: str          # var, param, func, class, array
+	type: Any
+	node: Any = None
+	mutable: bool = True
+	
+	def __repr__(self):
+		return f"Symbol(name={self.name!r}, kind={self.kind!r}, type={self.type!r})"
 
 class Visitor(metaclass=multimeta):
     pass
 
 class Checker(Visitor):
+# -------------------------------------------------
+# Inicialización del Checker
+# -------------------------------------------------
+
     def __init__(self):
         self.errors = []
         self.symtab = Symtab("global")
         self.loopDepth = 0
+
+# -------------------------------------------------
+# Utilidades
+# -------------------------------------------------
+
+    def error(self, node, message: str):
+        lineno = getattr(node, "lineno", "?")
+        self.errors.append(f"Error: Linea {lineno}: {message}")
+		
+    def open_scope(self, name: str):
+        if self.symtab is None:
+            self.symtab = Symtab(name)
+        else:
+            self.symtab = Symtab(name, parent=self.symtab)
+			
+    def close_scope(self):
+        if self.symtab is not None:
+            self.symtab = self.symtab.parent
+			
+    def addSym(self, node, name: str, symbol: Symbol):
+        try:
+            self.symtab.add(name, symbol)
+        except Symtab.SymbolDefinedError:
+            self.error(node, f"redeclaración de '{name}' en el mismo alcance")
+        except Symtab.SymbolConflictError:
+            self.error(node, f"conflicto de símbolo '{name}'")
+			
+    def lookup(self, node, name: str):
+        sym = self.symtab.get(name) if self.symtab else None
+        if sym is None:
+            self.error(node, f"símbolo '{name}' no definido")
+        return sym
+		
+    def ok(self) -> bool:
+        return len(self.errors) == 0
+    
+# -------------------------------------------------
+# funciones de visita para cada nodo del AST
+# -------------------------------------------------
 
     @multimethod
     def visit(self, node: Node):
@@ -24,94 +80,114 @@ class Checker(Visitor):
 
     @multimethod
     def visit(self, node: SimpleDecl):
-        try:
-            # agrega la variable al scope actual
-            self.symtab.add(node.varName, node)
-        except Symtab.SymbolDefinedError:
-            self.errors.append(f"Error: Linea {node.lineno}: La variable '{node.varName}' ya ha sido declarada.")
-        except Symtab.SymbolConflictError:
-            self.errors.append(f"Error: Linea {node.lineno}: Conflicto de tipos para variable '{node.varName}'.")
+        if isinstance(node.dataType, Function):
+            sym_kind = 'func'
+            if isinstance(node.dataType.funcType, Array):
+                sym_type = self.visit(node.dataType.funcType)
+            else:
+                sym_type = node.dataType.funcType
+        elif isinstance(node.dataType, Array):
+            sym_kind = 'array'
+            sym_type = self.visit(node.dataType)
+        else:
+            sym_kind = 'var'
+            sym_type = node.dataType
 
+        sym = Symbol(name=node.varName, kind=sym_kind, type=sym_type, node=node)
+        self.addSym(node, node.varName, sym)
+        
     @multimethod
     def visit(self, node: InitDecl):
-        try:
-            # agrega la variable al scope actual
-            self.symtab.add(node.varName, node)
+        # determinamos el tipo de simbolo y su tipo de datos
+        if isinstance(node.dataType, Function):
+            sym_kind = 'func'
+            # determinamos si el tipo de dato es un array para obtener el tipo correcto
+            if isinstance(node.dataType.funcType, Array):
+                sym_type = self.visit(node.dataType.funcType)
+            else:                   
+                sym_type = node.dataType.funcType
 
-            # 1. si la variable es una función, creamos un nuevo scope para su cuerpo
-            if isinstance(node.dataType, Function):
-                scope_parent = self.symtab
-                self.symtab = Symtab(node.varName, parent=scope_parent)
+        elif isinstance(node.dataType, Array):
+            sym_kind = 'array'
+            sym_type = self.visit(node.dataType)
 
-                # visitamos la cabecera de la función para registrar sus parámetros y obtener su tipo de retorno
-                self.funcReturnType = self.visit(node.dataType)
+        else:
+            sym_kind = 'var'
+            sym_type = node.dataType
+        
+        # agregamos el símbolo a la tabla de símbolos
+        sym = Symbol(name=node.varName, kind=sym_kind, type=sym_type, node=node)
+        self.addSym(node, node.varName, sym)
 
-                # bandera para rastrear si encontramos un return dentro del cuerpo de la función
-                self.hasReturned = False
+        # 1. para el caso de variables inicializadas que son funciones
+        if sym.kind == 'func':
 
-                # visitamos el cuerpo de la función (si es que tiene)
-                if node.value is not None:
-                    for stmt in node.value:
-                        self.visit(stmt)
-                
-                # al terminar de visitar el cuerpo de la función, verificamos si se esperaba un retorno de valor y no se encontró ningún return o el return encontrado no retorna un valor (en caso de funciones que esperan retornar un valor distinto a void)
-                if self.funcReturnType != 'void' and not self.hasReturned:
-                    self.errors.append(f"Error: Linea {node.lineno}: La función '{node.varName}' no retorna ningún valor. Se esperaba un retorno de tipo '{self.funcReturnType}'.")
+            # creamos un nuevo scope para el cuerpo de la funcion
+            self.open_scope(f"function_{node.varName}")
 
-                # al terminar, volvemos al scope padre
-                self.symtab = scope_parent
-                self.funcReturnType = None
-            
-            # 2. si la variable es un arreglo, verificamos que el tipo del valor coincida con el declarado
-            elif isinstance(node.dataType, Array):
-                dataTypeArray = self.visit(node.dataType)
+            # guardamos el tipo de retorno declarado para la función en un atributo del checker 
+            self.funcReturnType = sym.type
+            # visitamos la cabecera de la función para registrar sus parámetros
+            self.visit(node.dataType)
+            # bandera para rastrear si encontramos un return dentro del cuerpo de la función
+            self.hasReturned = False
 
-                if node.value is not None:
-                    for value in node.value:
-                        valueType = self.visit(value)
-                        if valueType != 'error' and valueType != dataTypeArray:
-                            self.errors.append(f"Error: Linea {node.lineno}: Se esperaba un valor tipo '{dataTypeArray}', pero se recibió un valor tipo '{valueType}' para el arreglo '{node.varName}'.")
+            # visitamos el cuerpo de la función
+            if node.value is not None:
+                for stmt in node.value:
+                    self.visit(stmt)
 
-            # 3. en caso de ser una variable común, verificamos que el tipo del valor coincida con el declarado
-            else:
+            if self.funcReturnType != 'void' and not self.hasReturned:
+                self.error(node, f"La función '{node.varName}' no retorna ningún valor. Se esperaba un retorno de tipo '{self.funcReturnType}'.")
+
+            # volvemos al scope padre
+            self.close_scope()
+            self.funcReturnType = None
+        
+        # 2. para el caso de variables inicializadas que son arreglos
+        elif sym_kind == 'array':
+            # visitamos el valor de inicialización del arreglo para verificar que los tipos conincidan
+            if node.value is not None:
+                for value in node.value:
+                    valueType = self.visit(value)
+                    if valueType != 'error' and valueType != sym_type:
+                        self.error(node, f"Se esperaba un valor tipo '{sym_type}', pero se recibió un valor tipo '{valueType}' para el arreglo '{node.varName}'.")
+
+        # 3. para el caso de variables inicializadas comunes
+        else:
+            if node.value is not None:
                 valueType = self.visit(node.value)
-                if valueType != 'error' and valueType != node.dataType:
-                    self.errors.append(f"Error: Linea {node.lineno}: Se esperaba un valor tipo '{node.dataType}', pero se recibió un valor tipo '{valueType}' para la variable '{node.varName}'.")
-
-        except Symtab.SymbolDefinedError:
-            self.errors.append(f"Error: Linea {node.lineno}: La variable '{node.varName}' ya ha sido declarada.")
-        except Symtab.SymbolConflictError:
-            self.errors.append(f"Error: Linea {node.lineno}: Conflicto de tipos para variable '{node.varName}'.")
+                if valueType != 'error' and valueType != sym_type:
+                    self.error(node, f"Se esperaba un valor tipo '{sym_type}', pero se recibió un valor tipo '{valueType}' para la variable '{node.varName}'.")
 
     @multimethod
     def visit(self, node: ClassDecl):
-        try:
-            # agregamos la clase al scope actual y creamos un nuevo scope para su cuerpo
-            self.symtab.add(node.className, node)
-            scope_parent = self.symtab
-            self.currentClass = node.className
-            self.symtab = Symtab(node.className, parent=scope_parent)
+        # agregamos el simbolo al scope actual
+        sym = Symbol(name=node.className, kind='class', type=node.className, node=node)
+        self.addSym(node, node.className, sym)
+        self.currentClass = node.className
 
-            # visitamos el cuerpo de la clase
+        # creamos un nuevo scope para el cuerpo de la clase y lo guardamos en su simbolo
+        self.open_scope(f"class_{node.className}")
+        sym.inner_scope = self.symtab
+
+        # visitamos su cuerpo
+        if node.classBody is not None:
             for member in node.classBody:
                 self.visit(member)
 
-            # al terminar, volvemos al scope padre
-            self.symtab = scope_parent
-        except Symtab.SymbolDefinedError:
-            self.errors.append(f"Error: Linea {node.lineno}: La clase '{node.className}' ya ha sido declarada.")
-        except Symtab.SymbolConflictError:
-            self.errors.append(f"Error: Linea {node.lineno}: Conflicto de tipos para clase '{node.className}'.")
+        # volvemos al scope padre
+        self.close_scope()
 
     @multimethod
     def visit(self, node: If):
         # verificamos que la condición del if exista y sea de tipo booleano
         if node.condition is None:
-            self.errors.append(f"Error: Linea {node.lineno}: La condición del 'if' no puede ser vacía.")
+            self.error(node, "La condición del 'if' no puede ser vacía.")
         else:
             conditionType = self.visit(node.condition)
             if conditionType != 'boolean' and conditionType != 'error':
-                self.errors.append(f"Error: Linea {node.lineno}: La condición del 'if' debe ser de tipo 'boolean', no '{conditionType}'.")
+                self.error(node, f"La condición del 'if' debe ser de tipo 'boolean', no '{conditionType}'.")
 
         # visitamos el nodo o nodos del cuerpo del if
         if node.ifBody is not None:
@@ -126,17 +202,17 @@ class Checker(Visitor):
         # aumentamos la profundidad de bucles para validar el uso de break/continue
         self.loopDepth += 1
 
-        # visitamos la parte de inicialización del for (si es que tiene)
+        # visitamos la parte de inicialización del for
         if node.header[0] is not None:
             self.visit(node.header[0])
         
-        # verificamos la parte de condición del for (si es que tiene)
+        # verificamos la parte de condición del for
         if node.header[1] is not None:
             conditionType = self.visit(node.header[1])
             if conditionType != 'boolean' and conditionType != 'error':
-                self.errors.append(f"Error: Linea {node.lineno}: La condición del 'for' debe ser de tipo 'boolean', no '{conditionType}'.")
+                self.error(node, f"La condición del 'for' debe ser de tipo 'boolean', no '{conditionType}'.")
 
-        # verificamos la parte de actualización del for (si es que tiene)
+        # verificamos la parte de actualización del for
         if node.header[2] is not None:
             self.visit(node.header[2])
     
@@ -156,7 +232,7 @@ class Checker(Visitor):
         if node.header is not None:
             conditionType = self.visit(node.header)
             if conditionType != 'boolean' and conditionType != 'error':
-                self.errors.append(f"Error: Linea {node.lineno}: La condición del 'while' debe ser de tipo 'boolean', no '{conditionType}'.")
+                self.error(node, f"La condición del 'while' debe ser de tipo 'boolean', no '{conditionType}'.")
 
         # visitamos el nodo o nodos del cuerpo del while
         if node.whileBody is not None:
@@ -178,7 +254,7 @@ class Checker(Visitor):
         
         # validamos que estemos realmente dentro de una función
         if funcReturnType is None:
-            self.errors.append(f"Error: Linea {node.lineno}: Sentencia 'return' fuera del cuerpo de una función.")
+            self.error(node, "Sentencia 'return' fuera del cuerpo de una función.")
             return 'error'
 
         self.hasReturned = True
@@ -191,32 +267,31 @@ class Checker(Visitor):
         
         # verificamos que el tipo de retorno coincida con el declarado para la función
         if funcReturnType != valueType and valueType != 'error':
-            self.errors.append(f"Error: Linea {node.lineno}: La funcion/metodo espera retornar un valor de tipo '{funcReturnType}', pero se está retornando un valor de tipo '{valueType}'.")
+            self.error(node, f"La función/método espera retornar un valor de tipo '{funcReturnType}', pero se está retornando un valor de tipo '{valueType}'.")
         return valueType
 
     @multimethod
     def visit(self, node: Break):
         # validamos que la sentencia break esté dentro de un bucle
         if self.loopDepth == 0:
-            self.errors.append(f"Error: Linea {node.lineno}: Sentencia 'break' fuera de un bucle.")
+            self.error(node, "Sentencia 'break' fuera de un bucle.")
 
     @multimethod
     def visit(self, node: Continue):
         # validamos que la sentencia continue esté dentro de un bucle
         if self.loopDepth == 0:
-            self.errors.append(f"Error: Linea {node.lineno}: Sentencia 'continue' fuera de un bucle.")
+            self.error(node, "Sentencia 'continue' fuera de un bucle.")
 
     @multimethod
     def visit(self, node: Block):
         # creamos un nuevo scope para el bloque
-        scopeParent = self.symtab
-        self.symtab = Symtab(f"block_line_{node.lineno}", parent=scopeParent)
+        self.open_scope(f"block_line_{node.lineno}")
 
         # visitamos cada sentencia en el bloque y volvemos al scope padre al terminar
         for stmt in node.stmtList:
             self.visit(stmt)
         
-        self.symtab = scopeParent
+        self.close_scope()
 
     @multimethod
     def visit(self, node: Assignment):
@@ -233,7 +308,7 @@ class Checker(Visitor):
         resultType = typesys.check_binop(operator, leftType, rightType)
 
         if resultType is None:
-            self.errors.append(f"Error: Linea {node.lineno}: Operación de asignación no válida entre tipos '{leftType}' y '{rightType}' con el operador '{operator}'.")
+            self.error(node, f"Operación de asignación no válida entre tipos '{leftType}' y '{rightType}' con el operador '{operator}'.")
             return 'error'
         
         return resultType
@@ -242,98 +317,96 @@ class Checker(Visitor):
     def visit(self, node: TernaryOp):
         # verificamos que la condición del operador ternario exista y sea de tipo booleano
         if node.condition is None:
-            self.errors.append(f"Error: Linea {node.lineno}: La condición del operador ternario no puede ser vacía.")
+            self.error(node, "La condición del operador ternario no puede ser vacía.")
         else:
             conditionType = self.visit(node.condition)
-            if conditionType != 'boolean':
-                self.errors.append(f"Error: Linea {node.lineno}: La condición del operador ternario debe ser de tipo 'boolean', no '{conditionType}'.")
+            if conditionType != 'boolean' and conditionType != 'error':
+                self.error(node, f"La condición del operador ternario debe ser de tipo 'boolean', no '{conditionType}'.")
 
         # visitamos las expresiones del cuerpo verdadero y falso del operador ternario
         if node.trueBody is None or node.falseBody is None:
-            self.errors.append(f"Error: Linea {node.lineno}: Ambos cuerpos del operador ternario deben estar definidos.")
+            self.error(node, "Ambos cuerpos del operador ternario deben estar definidos.")
             return 'error'
         
         trueType = self.visit(node.trueBody)
         falseType = self.visit(node.falseBody)
 
+        if trueType == 'error' or falseType == 'error':
+            return 'error'
+
         # verificamos que los tipos de ambos cuerpos del operador ternario coincidan
         if trueType != falseType:
-            self.errors.append(f"Error: Linea {node.lineno}: Los tipos de los cuerpos del operador ternario deben coincidir ('{trueType}' vs '{falseType}').")
-            return trueType
+            self.error(node, f"Los tipos de los cuerpos del operador ternario deben coincidir ('{trueType}' vs '{falseType}').")
+            return 'error'
 
         return trueType
 
     @multimethod
     def visit(self, node: Id):
-        # leemos el símbolo de la variable en la tabla de símbolos
-        symbol = self.symtab.get(node.name)        
+        # buscamos el simbolo en los scopes
+        symbol = self.lookup(node, node.name)
         if symbol is None:
-            self.errors.append(f"Error: Linea {node.lineno}: La variable '{node.name}' no ha sido declarada.")
             return 'error'  
-        else:
-            if isinstance(symbol.dataType, Array):
-                # si el símbolo es un arreglo, retornamos el tipo de datos que almacena el arreglo
-                return self.visit(symbol.dataType)
             
-            # en caso contrario, retornamos el tipo de datos del símbolo
-            return symbol.dataType
+        # retornamos su tipo de dato
+        return symbol.type
 
     @multimethod
     def visit(self, node: IdIndex):
         # verificamos que el indice sea de tipo entero
         indexType = self.visit(node.index)
-        if indexType != 'integer':
-            self.errors.append(f"Error: Linea {node.lineno}: El índice de un arreglo debe ser de tipo 'integer', no '{indexType}'.")
+        if indexType != 'integer' and indexType != 'error':
+            self.error(node, f"El índice de un arreglo debe ser de tipo 'integer', no '{indexType}'.")
 
         # obtenemos el símbolo del arreglo
-        symbol = self.symtab.get(node.leftNode.name)
+        symbol = self.lookup(node, node.leftNode.name)
         if symbol is None:
-            self.errors.append(f"Error: Linea {node.lineno}: La variable '{node.leftNode.name}' no ha sido declarada.")
             return 'error'
-        arrayType = symbol.dataType
 
         # verificamos que el tipo del nodo izquierdo sea realmente un arreglo para poder indexarlo
-        if not isinstance(arrayType, Array):
-            self.errors.append(f"Error: Linea {node.lineno}: Solo se pueden indexar variables de tipo arreglo, no '{arrayType}'.")
+        if symbol.kind != 'array':
+            self.error(node, f"Solo se pueden indexar variables de tipo arreglo. '{node.leftNode.name}' fue declarada como '{symbol.kind}'.")
             return 'error'
-        else:
-            # retornamos el tipo de datos que almacena el arreglo
-            return arrayType.valuesType
+        
+        return symbol.type
         
 
     @multimethod
     def visit(self, node: GetAttr):
-        # 1. verificamos el acceso a atributo a travez de this
+        # 1. verificamos el origen de llamada (this o un id)
         if node.varName == 'this':
             className = getattr(self, 'currentClass', None)
             if className is None:
-                self.errors.append(f"Error: Linea {node.lineno}: Uso de 'this' fuera del contexto de una clase.")
+                self.error(node, "Uso de 'this' fuera del contexto de una clase.")
                 return 'error'
-        # 2. verificamos el acceso a atributos de otras variables
         else:
-            varType = self.visit(node.varName)
-            if varType == 'error':
-                return 'error'
-            # buscamos el tipo de la variable para verificar que sea una clase y poder acceder a sus atributos
-            typeSymbol = self.symtab.get(varType)
-            if not isinstance(typeSymbol, ClassDecl):
-                self.errors.append(f"Error: Linea {node.lineno}: El tipo '{varType}' no es una clase y no se puede acceder a sus atributos.")
+            # visitamos la variable para obtener su tipo (el mismo nombre de la clase)
+            className = self.visit(node.varName)
+            if className == 'error':
                 return 'error'
             
-            className = varType
+        # 2. buscamos en la tabla de símbolos que esa clase realmente exista declarada
+        symbol = self.lookup(node, className)
+        if symbol is None:
+            return 'error'
+            
+        if symbol.kind != 'class':
+            self.error(node, f"El tipo '{className}' no es una clase y no se puede acceder a sus atributos.")
+            return 'error'
         
         # 3. buscamos el scope de la clase para verificar que el atributo exista
-        classScope = next((child for child in self.symtab.children if child.name == className), None)
+        classScope = getattr(symbol, 'inner_scope', None)
         if classScope is None:
-            self.errors.append(f"Error: Linea {node.lineno}: La clase '{className}' no ha sido declarada.")
+            self.error(node, f"No se encontró el entorno de la clase '{className}'.")
             return 'error'
 
         # 4. buscamos el símbolo del atributo dentro del scope de la clase
         attrSymbol = classScope.get(node.attr)
         if attrSymbol is None:
-            self.errors.append(f"Error: Linea {node.lineno}: La clase '{className}' no tiene un atributo llamado '{node.attr}'.")
+            self.error(node, f"La clase '{className}' no tiene un atributo llamado '{node.attr}'.")
             return 'error'
-        return attrSymbol.dataType
+        
+        return attrSymbol.type
 
 
     @multimethod
@@ -350,7 +423,7 @@ class Checker(Visitor):
         resultType = typesys.check_binop(operator, leftType, rightType)
 
         if resultType is None:
-            self.errors.append(f"Error: Linea {node.lineno}: Operación no válida entre tipos '{leftType}' y '{rightType}' con el operador '{operator}'.")
+            self.error(node, f"Operación no válida entre tipos '{leftType}' y '{rightType}' con el operador '{operator}'.")
             return 'error'
         return resultType
 
@@ -364,72 +437,72 @@ class Checker(Visitor):
         resultType = typesys.check_unaryop(operator, valueType)
 
         if resultType is None:
-            self.errors.append(f"Error: Linea {node.lineno}: Operación unaria no válida para el tipo '{valueType}' con el operador '{operator}'.")
+            self.error(node, f"Operación unaria no válida para el tipo '{valueType}' con el operador '{operator}'.")
             return valueType
         return resultType
 
     @multimethod
     def visit(self, node: Call):
         # verificamos que la función a llamar realmente exista
-        funcSymbol = self.symtab.get(node.funcName)
-        if funcSymbol is None:
-            self.errors.append(f"Error: Linea {node.lineno}: La función '{node.funcName}' no ha sido declarada.")
+        symbol = self.lookup(node, node.funcName)
+        if symbol is None:
             return 'error'
 
         # verificamos que el símbolo encontrado sea realmente una función
-        if not isinstance(funcSymbol.dataType, Function):
-            self.errors.append(f"Error: Linea {node.lineno}: El símbolo '{node.funcName}' no es una función y no se puede llamar.")
+        if symbol.kind != 'func':
+            self.error(node, f"El identificador '{node.funcName}' no es una función y no se puede llamar.")
             return 'error'
         
         # verificamos que la cantidad de parámetros en la llamada coincida con la cantidad de parámetros declarados para la función
-        func = funcSymbol.dataType.params
-        call = node.params
+        funcParams = symbol.node.dataType.params
+        callArgs = node.params
 
-        if len(func) != len(call):
-            self.errors.append(f"Error: Linea {node.lineno}: La función '{node.funcName}' espera {len(func)} parámetros, pero se le están pasando {len(call)}.")
+        if len(funcParams) != len(callArgs):
+            self.error(node, f"La función '{node.funcName}' espera {len(funcParams)} parámetros, pero se le están pasando {len(callArgs)}.")
             return 'error'
 
         # verificamos que el tipo de cada argumento en la llamada coincida con el tipo declarado para cada parámetro de la función
         hay_errores = False
-        for i, (paramFunc, paramCall) in enumerate(zip(func, call)):
+        for i, (paramFunc, argCall) in enumerate(zip(funcParams, callArgs)):
             # verificamos si el tipo declarado para el parámetro es un arreglo para obtener el tipo correcto a comparar con el argumento
             if isinstance(paramFunc.dataType, Array):
                 paramType = self.visit(paramFunc.dataType)
             else:
                 paramType = paramFunc.dataType
 
-            argType = self.visit(paramCall)
+            argType = self.visit(argCall)
 
             if argType == 'error':
+                hay_errores = True
                 continue
 
             if paramType != argType:
-                self.errors.append(f"Error: Linea {node.lineno}: El parámetro {i+1} de la función '{node.funcName}' espera un valor de tipo '{paramType}', pero esta recibiendo un valor de tipo '{argType}'.")
+                self.error(node, f"El parámetro {i+1} de la función '{node.funcName}' espera un valor de tipo '{paramType}', pero está recibiendo '{argType}'.")
                 hay_errores = True
         
         if hay_errores:
             return 'error'
         
-        return funcSymbol.dataType.funcType
+        return symbol.type
 
     @multimethod
     def visit(self, node: NewInstance):
         # verificamos que el tipo de clase a instanciar exista
-        classSymbol = self.symtab.get(node.classType)
-        if classSymbol is None:
-            self.errors.append(f"Error: Linea {node.lineno}: La clase '{node.classType}' no ha sido declarada.")
+        symbol = self.lookup(node, node.classType)
+        if symbol is None:
             return 'error'
         
         # verificamos que el símbolo encontrado sea realmente una clase
-        if not isinstance(classSymbol, ClassDecl):
-            self.errors.append(f"Error: Linea {node.lineno}: El tipo '{node.classType}' no es una clase y no se puede instanciar.")
+        if symbol.kind != 'class':
+            self.error(node, f"El identificador '{node.classType}' no es una clase y no se puede instanciar.")
             return 'error'
 
         # verficamos que la lista de parametros este vacia (por ahora no se soporta un constructor con parámetros)
         if node.params:
-            self.errors.append(f"Error: Linea {node.lineno}: La clase '{node.classType}' no tiene un constructor que acepte parámetros.")
+            self.error(node, f"La clase '{node.classType}' no tiene un constructor que acepte parámetros.")
             return 'error'
-        return node.classType
+        
+        return symbol.type
 
 
     @multimethod
@@ -440,47 +513,55 @@ class Checker(Visitor):
             return 'error'
         
         # verificamos que el tipo encontrado para la clase sea realmente una clase para poder acceder a sus métodos
-        typeSymbol = self.symtab.get(className)
-        if not isinstance(typeSymbol, ClassDecl):
-            self.errors.append(f"Error: Linea {node.lineno}: El tipo '{className}' no es una clase y no se pueden llamar métodos de él.")
+        symbol = self.lookup(node, className)
+        if symbol is None:
+            return 'error'
+            
+        if symbol.kind != 'class':
+            self.error(node, f"El tipo '{className}' no es una clase y no se pueden llamar métodos de él.")
             return 'error'
 
         # buscamos el scope de la clase para verificar que el método exista
-        classScope = next((child for child in self.symtab.children if child.name == className), None)
+        classScope = getattr(symbol, 'inner_scope', None)
         if classScope is None:
-            self.errors.append(f"Error: Linea {node.lineno}: La clase '{className}' no ha sido declarada.")
+            self.error(node, f"No se encontró el entorno de la clase '{className}'.")
             return 'error'
         
         methodSymbol = classScope.get(node.methodName)
         if methodSymbol is None:
-            self.errors.append(f"Error: Linea {node.lineno}: La clase '{className}' no tiene un método llamado '{node.methodName}'.")
+            self.error(node, f"La clase '{className}' no tiene un método llamado '{node.methodName}'.")
+            return 'error'
+
+        if methodSymbol.kind != 'func':
+            self.error(node, f"El atributo '{node.methodName}' de la clase '{className}' no es un método.")
             return 'error'
         
         # verificamos que la cantidad de parámetros en la llamada coincida con la cantidad de parámetros declarados para el método
-        func = methodSymbol.dataType.params
-        call = node.params
+        funcParams = methodSymbol.dataType.params
+        callArgs = node.params
 
-        if len(func) != len(call):
-            self.errors.append(f"Error: Linea {node.lineno}: El método '{node.methodName}' espera {len(func)} parámetros, pero se le están pasando {len(call)}.")
+        if len(funcParams) != len(callArgs):
+            self.error(node, f"El método '{node.methodName}' espera {len(funcParams)} parámetros, pero se le están pasando {len(callArgs)}.")
             return 'error'
 
         # verificamos que el tipo de cada argumento en la llamada coincida con el tipo declarado para cada parámetro del método
         hay_errores = False
-        for i, (paramFunc, paramCall) in enumerate(zip(func, call)):
+        for i, (paramFunc, argCall) in enumerate(zip(funcParams, callArgs)):
             paramType = paramFunc.dataType
-            argType = self.visit(paramCall)
+            argType = self.visit(argCall)
 
             if argType == 'error':
+                hay_errores = True
                 continue
 
             if paramType != argType:
-                self.errors.append(f"Error: Linea {node.lineno}: El parámetro {i+1} del método '{node.methodName}' espera un valor de tipo '{paramType}', pero esta recibiendo un valor de tipo '{argType}'.")
+                self.error(node, f"El parámetro {i+1} del método '{node.methodName}' espera un valor de tipo '{paramType}', pero está recibiendo '{argType}'.")
                 hay_errores = True
         
         if hay_errores:
             return 'error'
         
-        return methodSymbol.dataType.funcType
+        return methodSymbol.type
 
     @multimethod
     def visit(self, node: Literal):
@@ -489,37 +570,33 @@ class Checker(Visitor):
 
     @multimethod
     def visit(self, node: Array):
-        # verificamos que el tamaño del arreglo (si es que tiene) sea de tipo entero
+        # verificamos que el tamaño del arreglo sea de tipo entero
         if node.size is not None:
             sizeType = self.visit(node.size)
-            if sizeType != 'integer':
-                self.errors.append(f"Error: Linea {node.lineno}: El tamaño del arreglo debe ser de tipo 'integer', no '{sizeType}'.")
-                
-        # retornamos el tipo de datos que almacena el arreglo
-        return node.valuesType
+            if sizeType != 'integer' and sizeType != 'error':
+                self.error(node, f"El tamaño del arreglo debe ser de tipo 'integer', no '{sizeType}'.")
         
+        # retornamos el tipo de datos del arreglo
+        return node.valuesType
 
     @multimethod
     def visit(self, node: Function):
-        # visitamos cada parametro de la función (si es que tiene)
+        # visitamos cada parametro de la función
         for param in node.params:
             self.visit(param)
 
-        # verificamos si el tipo de retorno es simple o un arreglo para retornar el tipo correcto de la función
-        if isinstance(node.funcType, Array):
-            return self.visit(node.funcType)
-        else:
-            return node.funcType
-
     @multimethod
     def visit(self, node: ParamDecl):
-        try:
-            # agrega el parametro al scope de la funcion en caso de no estar declarado previamente
-            self.symtab.add(node.varName, node)
-        except Symtab.SymbolDefinedError:
-            self.errors.append(f"Error: Linea {node.lineno}: El parámetro '{node.varName}' ya ha sido declarado en esta función.")
-        except Symtab.SymbolConflictError:
-            self.errors.append(f"Error: Linea {node.lineno}: Conflicto de tipos para parámetro '{node.varName}'.")
+        # si el parámetro es un arreglo, lo registramos como arreglo
+        if isinstance(node.dataType, Array):
+            sym_kind = 'array'
+            sym_type = self.visit(node.dataType)
+        else:
+            sym_kind = 'param'
+            sym_type = node.dataType
+        
+        sym = Symbol(name=node.varName, kind=sym_kind, type=sym_type, node=node)
+        self.addSym(node, node.varName, sym)
 
     # diccionario para mapear los tipos de literales a sus correspondientes tipos de datos
     LITERAL_TYPES = {

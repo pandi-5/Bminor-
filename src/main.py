@@ -1,12 +1,12 @@
 import os
 import argparse
-from src.parser import Parser
-from src.lexer_mio import Lexer
-from src.checker import Checker
-from src.visualizer import build_rich_tree, build_graphviz
+from parser import Parser
+from lexer_mio import Lexer
+from checker import Checker
+from visualizer import build_rich_tree, build_graphviz
 from rich import print as rprint
 from graphviz import Digraph
-import src.errors as errors
+import errors as errors
 
 def compilar(fase, filename, use_rich=False, use_graphviz=False):
     try:
@@ -73,10 +73,11 @@ def compilar(fase, filename, use_rich=False, use_graphviz=False):
             print("SE ENCONTRARON ERRORES SEMÁNTICOS")
             print("-" * 40)
             for error in checker.errors:
-                print(error)
+                colored_error = error.replace("Error", "[red]Error[/red]")
+                rprint(colored_error)
             print("-" * 40)
         else:
-            print("Compilacion exitosa. No se encontraron errores semánticos.")
+            rprint("[bold green]Compilación exitosa. No se encontraron errores semánticos.[/bold green]")
         return
 
 
